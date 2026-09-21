@@ -1,4 +1,5 @@
 using UnityEngine;
+using TextMeshPro;
 
 public class GameManager : MonoBehaviour
 {
