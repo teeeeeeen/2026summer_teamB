@@ -11,17 +11,19 @@ public class VerticalMovement : MonoBehaviour
 
     private PlayerControls inputActions;
     // W/Sの値（-1.0 ～ 1.0）
-    private float verticalInput;
+    [Header("移動制限 (X軸)")]
+    public float minX = -5f; 
+    public float maxX = 5f;  
+
+
+    private Vector2 moveInput;
 
     private void Awake()
     {
         inputActions = new PlayerControls();
 
-        // (W=1, S=-1）
-        inputActions.Player.Move.performed += context => verticalInput = context.ReadValue<float>();
-        
-        // キーが離された時に値を0に戻す
-        inputActions.Player.Move.canceled += context => verticalInput = 0f;
+        inputActions.Player.Move.performed += context => moveInput = context.ReadValue<Vector2>();
+        inputActions.Player.Move.canceled += context => moveInput = Vector2.zero;
     }
 
     // オブジェクトが有効になった時に入力を有効化
@@ -38,13 +40,16 @@ public class VerticalMovement : MonoBehaviour
 
     private void Update()
     {
-      // 現在地はどこ？
+        // 現在地はどこ？
         Vector3 newPosition = transform.position;
 
-        // 入力に合わせてZ座標を計算
-        newPosition.z += verticalInput * moveSpeed * Time.deltaTime;
+        // 【追加】X軸（左右）の計算と制限 (A/Dキーの入力 = moveInput.x)
+        newPosition.x += moveInput.x * moveSpeed * Time.deltaTime;
+        newPosition.x = Mathf.Clamp(newPosition.x, minX, maxX);
 
-        // Z座標を minZ と maxZ の間に制限
+        // 【修正】Z軸（奥・手前）の計算と制限 (W/Sキーの入力 = moveInput.y)
+        // ※ verticalInput を moveInput.y に変更
+        newPosition.z += moveInput.y * moveSpeed * Time.deltaTime;
         newPosition.z = Mathf.Clamp(newPosition.z, minZ, maxZ);
 
         // 制限した位置を実際のオブジェクトに適用
