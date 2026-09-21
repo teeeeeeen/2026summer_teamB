@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[RequireComponent(typeof(SpriteRenderer))]
 public class Obstacle : MonoBehaviour
 {
     [Header("移動設定")]
@@ -9,6 +10,29 @@ public class Obstacle : MonoBehaviour
     [Header("種類の設定")]
     [Tooltip("チェックを入れると「接触しなきゃいけないもの」になります。")]
     public bool isMustCatch = false; 
+
+    [Header("見た目の設定")]
+    [Tooltip("ランダムに選ばれるスプライトのリスト")]
+    public Sprite[] sprites;
+    
+    private SpriteRenderer spriteRenderer;
+
+    void Start()
+    {
+        // SpriteRendererを取得
+        spriteRenderer = GetComponent<SpriteRenderer>();
+
+        // リストにスプライトが登録されていれば、ランダムに1つ適用する
+        if (sprites != null && sprites.Length > 0)
+        {
+            int randomIndex = Random.Range(0, sprites.Length);
+            spriteRenderer.sprite = sprites[randomIndex];
+        }
+
+        // スプライトが影を落とす・影を受ける設定を有効化
+        spriteRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        spriteRenderer.receiveShadows = true;
+    }
 
     void Update()
     {
@@ -21,8 +45,7 @@ public class Obstacle : MonoBehaviour
             if (isMustCatch)
             {
                 // 接触しなきゃいけないものをスルーしてしまったらゲームオーバー
-                // GameManager.instance.TriggerGameOver();
-                Destroy(gameObject);
+                GameManager.instance.TriggerGameOver();
             }
             // オブジェクトを削除
             Destroy(gameObject);
