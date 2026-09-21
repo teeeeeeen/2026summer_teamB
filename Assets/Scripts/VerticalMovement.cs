@@ -14,16 +14,22 @@ public class VerticalMovement : MonoBehaviour
     [Header("移動制限 (X軸)")]
     public float minX = -5f; 
     public float maxX = 5f;  
+    [Header("ジャンプ力")]
+    public float jumpForce = 5f;
 
+    [Header("着地判定")]
+    public float rayLength = 0.1f;
 
     private Vector2 moveInput;
-
+    private Rigidbody rb;
     private void Awake()
     {
         inputActions = new PlayerControls();
 
         inputActions.Player.Move.performed += context => moveInput = context.ReadValue<Vector2>();
         inputActions.Player.Move.canceled += context => moveInput = Vector2.zero;
+        inputActions.Player.Jump.started += context => Jump();
+        rb = GetComponent<Rigidbody>();
     }
 
     // オブジェクトが有効になった時に入力を有効化
@@ -54,5 +60,16 @@ public class VerticalMovement : MonoBehaviour
 
         // 制限した位置を実際のオブジェクトに適用
         transform.position = newPosition;
+    }
+
+    private void Jump()
+    {
+        // 着地判定
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position, Vector3.down, out hit, rayLength))
+        {
+            // ジャンプ力を使って上方向に力を加える
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        }
     }
 }
