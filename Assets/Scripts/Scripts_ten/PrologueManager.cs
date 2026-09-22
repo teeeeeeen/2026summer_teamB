@@ -25,7 +25,9 @@ public class PrologueManager : MonoBehaviour
 
     [Header("サウンド設定")]
     public AudioSource audioSource;      
-    public AudioClip typeSound;          
+    public AudioClip typeSound;
+    public AudioClip GuiterSound;
+    public AudioClip BikeSound;          
 
     [Header("プロローグ進行設定")]
     public float typeSpeed = 0.05f;      
@@ -79,6 +81,8 @@ public class PrologueManager : MonoBehaviour
             }
             else
             {
+                audioSource.PlayOneShot(GuiterSound);
+                audioSource.PlayOneShot(BikeSound);
                 EndPrologue();
             }
         }
