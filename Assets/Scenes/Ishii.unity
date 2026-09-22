@@ -622,7 +622,9 @@ MonoBehaviour:
   minX: -5
   maxX: 5
   jumpForce: 15
-  rayLength: 0.601
+  rayLength: 0.8
+  MaxTiltAngle: 30
+  TiltSpeed: 5
 --- !u!54 &1770174364
 Rigidbody:
   m_ObjectHideFlags: 0
