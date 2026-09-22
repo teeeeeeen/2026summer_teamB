@@ -101,7 +101,7 @@ public class MenuNavigator : MonoBehaviour
         arrowRect.pivot = new Vector2(0.5f, 0f);
 
         // 矢印の位置
-        arrowRect.anchoredPosition = new Vector2(30f, 10f);
+        arrowRect.anchoredPosition = new Vector2(15f, -20f);
 
         arrow.SetActive(true);
     }
