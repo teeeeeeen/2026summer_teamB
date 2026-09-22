@@ -25,9 +25,7 @@ public class MenuNavigator : MonoBehaviour
         if (Keyboard.current == null)
             return;
 
-        // =========================
         // Dキー → 右へ
-        // =========================
         if (Keyboard.current.dKey.wasPressedThisFrame)
         {
             if (currentButton == startButton)
@@ -46,9 +44,7 @@ public class MenuNavigator : MonoBehaviour
             SelectButton();
         }
 
-        // =========================
         // Aキー → 左へ
-        // =========================
         if (Keyboard.current.aKey.wasPressedThisFrame)
         {
             if (currentButton == quitButton)
@@ -67,9 +63,7 @@ public class MenuNavigator : MonoBehaviour
             SelectButton();
         }
 
-        // =========================
         // Enter / Space / Z → 決定
-        // =========================
         if (Keyboard.current.enterKey.wasPressedThisFrame ||
             Keyboard.current.spaceKey.wasPressedThisFrame ||
             Keyboard.current.zKey.wasPressedThisFrame)
@@ -83,11 +77,16 @@ public class MenuNavigator : MonoBehaviour
         }
     }
 
-    // =========================
-    // ボタンを選択
-    // =========================
     void SelectButton()
     {
+        // 全ボタンの背景を停止
+        startButton.GetComponentInChildren<ScrollingBack>()?.SetSelected(false);
+        howToButton.GetComponentInChildren<ScrollingBack>()?.SetSelected(false);
+        quitButton.GetComponentInChildren<ScrollingBack>()?.SetSelected(false);
+
+        // 選択中の背景だけ動かす
+        currentButton.GetComponentInChildren<ScrollingBack>()?.SetSelected(true);
+
         // EventSystemの選択を更新
         EventSystem.current.SetSelectedGameObject(null);
         EventSystem.current.SetSelectedGameObject(currentButton);
@@ -97,16 +96,13 @@ public class MenuNavigator : MonoBehaviour
 
         RectTransform arrowRect = arrow.GetComponent<RectTransform>();
 
-        // ボタンの上に配置
         arrowRect.anchorMin = new Vector2(0.5f, 1f);
         arrowRect.anchorMax = new Vector2(0.5f, 1f);
-
         arrowRect.pivot = new Vector2(0.5f, 0f);
 
-        // ボタンから少し上
+        // 矢印の位置
         arrowRect.anchoredPosition = new Vector2(30f, 10f);
 
-        // 矢印を表示
         arrow.SetActive(true);
     }
 }
