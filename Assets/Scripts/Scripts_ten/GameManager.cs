@@ -9,13 +9,18 @@ public class GameManager : MonoBehaviour
 
     [Header("UI設定")]
     public GameObject gameOverUI;
-    public GameObject gameClearUI; // 新設：クリアUI
-    public TextMeshProUGUI timerText; // 新設：タイマー用のテキスト窓
-    public Image hpGaugeImage; // 新設：HPゲージ用のImage
+    public GameObject gameClearUI; // クリアUI
+    public TextMeshProUGUI timerText; // タイマー用のテキスト窓
+    public Image hpImage; // HP表示用のImageコンポーネント
+    public AudioSource DamageSound; // ダメージを受けたときの効果音
+
+    [Header("HPスプライト設定")]
+    [Tooltip("インデックス0にHP0の画像、インデックス6にHP6の画像になるよう、計7枚セットしてください。")]
+    public Sprite[] hpSprites; // 状態ごとのスプライト配列
 
     [Header("ゲーム設定")]
     public float remainingTime = 180f; // 3分（180秒）
-    public int maxHp = 5; // 新設：最大HP
+    public int maxHp = 6; // 最大HPを6に変更
 
     private int currentHp; // 現在のHP
     private bool isGameActive = true;
@@ -27,7 +32,7 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        // ゲーム開始時にHPを最大値に初期化し、ゲージを更新
+        // ゲーム開始時にHPを最大値に初期化し、画像を更新
         currentHp = maxHp;
         UpdateHpUI();
     }
@@ -54,16 +59,18 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // 新設：ダメージを受ける処理
+    // ダメージを受ける処理
     public void TakeDamage(int amount = 1)
     {
         if (!isGameActive) return;
+        AudioSource.PlayClipAtPoint(DamageSound.clip, transform.position); // ダメージ音を再生
 
         currentHp -= amount;
 
         // HPが0以下になったらゲームオーバー
         if (currentHp <= 0)
         {
+
             currentHp = 0;
             UpdateHpUI();
             TriggerGameOver();
@@ -74,7 +81,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // 新設：HPを回復する処理（形だけ作成）
+    // HPを回復する処理
     public void Heal(int amount = 1)
     {
         if (!isGameActive) return;
@@ -90,13 +97,14 @@ public class GameManager : MonoBehaviour
         UpdateHpUI();
     }
 
-    // 新設：HPゲージの表示を更新する処理
+    // HP画像の表示を更新する処理
     private void UpdateHpUI()
     {
-        if (hpGaugeImage != null)
+        if (hpImage != null && hpSprites != null && hpSprites.Length > 0)
         {
-            // currentHp / maxHp で 0.0 ~ 1.0 の割合を計算し、FillAmountに適用
-            hpGaugeImage.fillAmount = (float)currentHp / maxHp;
+            // 現在のHPが配列の範囲外にならないよう安全対策をしてからスプライトを適用
+            int spriteIndex = Mathf.Clamp(currentHp, 0, hpSprites.Length - 1);
+            hpImage.sprite = hpSprites[spriteIndex];
         }
     }
 
@@ -110,7 +118,7 @@ public class GameManager : MonoBehaviour
         if (gameOverUI != null) gameOverUI.SetActive(true);
     }
 
-    // 新設：3分耐えきったときに呼ばれる関数
+    // 3分耐えきったときに呼ばれる関数
     public void TriggerGameClear()
     {
         if (!isGameActive) return;

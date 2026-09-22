@@ -16,6 +16,12 @@ public class DecoSpawner : MonoBehaviour
 
     private float timer;
 
+    void Start()
+    {
+        // 初期化処理が必要な場合はここに追加
+        SpawnDecorations();
+    }
+
     void Update()
     {
         timer += Time.deltaTime;

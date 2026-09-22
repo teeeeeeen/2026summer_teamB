@@ -40,7 +40,7 @@ public class Obstacle : MonoBehaviour
         if (isFlying)
         {
             FlyToTarget();
-            return; // 飛んでいる間は下にある通常の奥→手前の移動処理を行わない
+            return; 
         }
 
         // 通常の移動：Space.Worldを指定してワールド空間のZ軸マイナス方向へ進ませる
@@ -51,7 +51,6 @@ public class Obstacle : MonoBehaviour
         {
             if (isMustCatch)
             {
-                // 接触しなきゃいけないものをスルーしてしまったらゲームオーバー
                 // GameManager.instance.TriggerGameOver();
             }
             Destroy(gameObject);
@@ -63,7 +62,7 @@ public class Obstacle : MonoBehaviour
     {
         if (targetTransform == null)
         {
-            Destroy(gameObject); // ターゲットがない場合は即消滅
+            Destroy(gameObject); 
             return;
         }
 
@@ -72,7 +71,7 @@ public class Obstacle : MonoBehaviour
 
         if (t >= 1.0f)
         {
-            Destroy(gameObject); // 到達したら消滅
+            Destroy(gameObject); 
             return;
         }
 
@@ -106,14 +105,19 @@ public class Obstacle : MonoBehaviour
 
     private void HandleCollision()
     {
-        if (isFlying) return; // 既に飛んでいる場合は2重判定しない
+        if (isFlying) return; 
 
         if (isMustCatch)
         {
-            // 拾うべき奴
             Debug.Log($"{ingredientName}を獲得！");
 
-            // 当たり判定を即座に無効化（複数コライダーがある場合を考慮して配列で処理）
+            // マネージャーへ具材の名前とスプライトを渡す
+            if (SoupManager.instance != null)
+            {
+                SoupManager.instance.CatchIngredient(ingredientName, spriteRenderer.sprite);
+            }
+
+            // 当たり判定を即座に無効化
             Collider[] colliders = GetComponents<Collider>();
             foreach (Collider col in colliders)
             {
@@ -127,9 +131,8 @@ public class Obstacle : MonoBehaviour
         }
         else
         {
-            // 拾ってはいけない奴
             Debug.Log("ダメージ！");
-            GameManager.instance.TakeDamage(); // ←これを追加
+            GameManager.instance.TakeDamage();
             Destroy(gameObject);
         }
     }

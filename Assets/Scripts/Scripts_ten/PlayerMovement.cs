@@ -16,9 +16,12 @@ public class PlayerMovement : MonoBehaviour
     
     [Header("ジャンプ力")]
     public float jumpForce = 5f;
-    [Header("着地判定")]
-    public float rayLength = 0.1f;
     
+    [Header("着地判定")]
+    public float rayLength = 1.1f;         // 中心より少し上から飛ばすため、適切な長さを確保（モデルに合わせて調整）
+    public float rayStartOffset = 0.5f;    // レイの発射位置を少し上にするためのY軸オフセット
+    public LayerMask groundLayer;          // 地面として判定するレイヤーを指定
+
     [Header("バイクの傾き・回転")]
     public float MaxSideTiltAngle = 20f; // 左右の最大傾き
     public float TiltSpeed = 5f;         // 傾きのスピード
@@ -26,6 +29,8 @@ public class PlayerMovement : MonoBehaviour
     [Header("ウィリー設定")]
     public float wheelieAngle = -30f;    // ジャンプ時の傾き角度（X軸マイナス方向）
     public float wheelieDuration = 0.6f; // 傾いてから戻るまでの時間（秒）
+
+    public AudioSource jumpSound; // ジャンプ時の効果音
 
     private PlayerControls inputActions;
     private Vector2 moveInput;
@@ -101,11 +106,14 @@ public class PlayerMovement : MonoBehaviour
 
     private void Jump()
     {
-        RaycastHit hit;
-        // 着地しているか確認
-        if (Physics.Raycast(transform.position, Vector3.down, out hit, rayLength))
+        // 地面に埋まっている状態での判定抜けを防ぐため、レイの始点をY軸上方向へオフセット
+        Vector3 rayOrigin = transform.position + (Vector3.up * rayStartOffset);
+
+        // 指定したLayerMask（地面レイヤー）のコライダーのみを対象にRaycastを計算
+        if (Physics.Raycast(rayOrigin, Vector3.down, rayLength, groundLayer))
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            AudioSource.PlayClipAtPoint(jumpSound.clip, transform.position); // ジャンプ音を再生
             
             // まだウィリー中でなければ処理を開始
             if (!isWheelieing)
