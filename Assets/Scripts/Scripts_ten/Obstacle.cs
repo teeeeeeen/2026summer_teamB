@@ -5,7 +5,7 @@ public class Obstacle : MonoBehaviour
 {
     [Header("移動設定")]
     public float speed = 10f;       // 右から左へ進む速度
-    public float destroyX = -15f;   // これより左に来たら削除するX座標
+    public float destroyZ = -15f;   // これより左に来たら削除するX座標
 
     [Header("種類の設定")]
     [Tooltip("チェックを入れると「接触しなきゃいけないもの」になります。")]
@@ -37,15 +37,15 @@ public class Obstacle : MonoBehaviour
     void Update()
     {
         // 右から左（X軸のマイナス方向）に進む
-        transform.Translate(Vector3.left * speed * Time.deltaTime);
+        transform.Translate(Vector3.back * speed * Time.deltaTime);
 
         // 画面左端を通り過ぎた時の処理
-        if (transform.position.x < destroyX)
+        if (transform.position.z < destroyZ)
         {
             if (isMustCatch)
             {
                 // 接触しなきゃいけないものをスルーしてしまったらゲームオーバー
-                GameManager.instance.TriggerGameOver();
+                
             }
             // オブジェクトを削除
             Destroy(gameObject);
