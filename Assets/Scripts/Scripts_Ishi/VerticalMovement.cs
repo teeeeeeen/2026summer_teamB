@@ -19,7 +19,9 @@ public class VerticalMovement : MonoBehaviour
 
     [Header("着地判定")]
     public float rayLength = 0.1f;
-
+    [Header("バイクの傾き")]
+    public float MaxTiltAngle = 30f;//最大傾き
+    public float TiltSpeed = 5f;//傾きのスピード
     private Vector2 moveInput;
     private Rigidbody rb;
     private void Awake()
@@ -60,6 +62,11 @@ public class VerticalMovement : MonoBehaviour
 
         // 制限した位置を実際のオブジェクトに適用
         transform.position = newPosition;
+        //バイクの傾きの処理
+        float targettilt=moveInput.y*MaxTiltAngle;
+        Quaternion targetRotation = Quaternion.Euler(targettilt, transform.eulerAngles.y, 0f);
+        transform.rotation=Quaternion.Lerp(transform.rotation,targetRotation,Time.deltaTime*TiltSpeed);
+
     }
 
     private void Jump()
