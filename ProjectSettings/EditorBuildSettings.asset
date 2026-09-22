@@ -8,6 +8,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/ten.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/Scenes/suika.unity
+    guid: da7769ac91ad923408c796d71b694513
+  - enabled: 1
+    path: Assets/Scenes/Main.unity
+    guid: 3e0002357dc96634ebb57baf684af1f8
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: c0b16229362f6f34ab1f46901d542fae, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
