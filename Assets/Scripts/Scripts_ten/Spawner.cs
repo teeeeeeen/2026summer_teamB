@@ -40,6 +40,12 @@ public class Spawner : MonoBehaviour
 
     private float timer;
 
+    void Start()
+    {
+        // 初期化処理が必要な場合はここに追加
+        SpawnMultiple();
+    }
+
     void Update()
     {
         timer += Time.deltaTime;
