@@ -21,11 +21,19 @@ public class PrologueManager : MonoBehaviour
     public Image backgroundImage;        
     public GameObject skipButton;        
     [Tooltip("テキスト表示完了後に表示する「次へ」のUIオブジェクト")]
-    public GameObject nextPromptUI; // 新設：「次へ」を表示するUI
+    public GameObject nextPromptUI;
+
+    [Header("フェード設定")]
+    [Tooltip("画面を覆うフェード用のImage")]
+    public Image fadeMask;
+    [Tooltip("フェードにかかる時間（秒）")]
+    public float fadeDuration = 1.0f;
 
     [Header("サウンド設定")]
     public AudioSource audioSource;      
-    public AudioClip typeSound;          
+    public AudioClip typeSound;
+    public AudioClip GuiterSound;
+    public AudioClip BikeSound;          
 
     [Header("プロローグ進行設定")]
     public float typeSpeed = 0.05f;      
@@ -35,10 +43,20 @@ public class PrologueManager : MonoBehaviour
 
     private int currentPage = 0;
     private bool isTyping = false;
+    private bool isFinished = false; // 終了処理中かどうかの判定フラグ
     private Coroutine typingCoroutine;
 
     void Start()
     {
+        // フェード用のマスクが設定されていれば、開始時は透明にしておく
+        if (fadeMask != null)
+        {
+            Color c = fadeMask.color;
+            c.a = 0f;
+            fadeMask.color = c;
+            fadeMask.gameObject.SetActive(false);
+        }
+
         if (pages.Length > 0)
         {
             ShowPage(currentPage);
@@ -47,6 +65,7 @@ public class PrologueManager : MonoBehaviour
 
     void Update()
     {
+        if (isFinished) return; // フェード中（終了処理中）は入力を受け付けない
 
         bool isClicked = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
         bool isEnterPressed = Keyboard.current != null && (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame);
@@ -79,6 +98,8 @@ public class PrologueManager : MonoBehaviour
             }
             else
             {
+                audioSource.PlayOneShot(GuiterSound);
+                audioSource.PlayOneShot(BikeSound);
                 EndPrologue();
             }
         }
@@ -131,7 +152,7 @@ public class PrologueManager : MonoBehaviour
 
     public void Skip()
     {
-        if (currentPage >= skipTargetIndex) return;
+        if (isFinished || currentPage >= skipTargetIndex) return;
 
         currentPage = skipTargetIndex;
         ShowPage(currentPage);
@@ -139,8 +160,41 @@ public class PrologueManager : MonoBehaviour
 
     void EndPrologue()
     {
-        Debug.Log("プロローグ終了。本編へ移行します。");
-        // 終了時に「次へ」UIを消す
+        isFinished = true; // 入力をブロック
+        
         if (nextPromptUI != null) nextPromptUI.SetActive(false);
+
+        if (fadeMask != null)
+        {
+            StartCoroutine(FadeOutMask());
+        }
+        else
+        {
+            CompletePrologue();
+        }
+    }
+
+    IEnumerator FadeOutMask()
+    {
+        fadeMask.gameObject.SetActive(true);
+        float timer = 0f;
+        Color startColor = fadeMask.color;
+        Color endColor = new Color(startColor.r, startColor.g, startColor.b, 1f); // アルファ値を1（不透明）に
+
+        while (timer < fadeDuration)
+        {
+            timer += Time.deltaTime;
+            fadeMask.color = Color.Lerp(startColor, endColor, timer / fadeDuration);
+            yield return null;
+        }
+
+        fadeMask.color = endColor;
+        CompletePrologue();
+    }
+
+    void CompletePrologue()
+    {
+        Debug.Log("フェード完了。本編へ移行します。");
+        // ここに SceneManager.LoadScene("MainScene"); などのシーン遷移処理を追加してください
     }
 }
