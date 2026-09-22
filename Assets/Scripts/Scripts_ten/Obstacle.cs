@@ -8,11 +8,42 @@ public class Obstacle : MonoBehaviour
 
     [Header("種類の設定")]
     [Tooltip("チェックを入れると「接触しなきゃいけないもの」になります。")]
-    public bool isMustCatch = false; 
+    public bool isMustCatch = false;
+
+    [Header("具材情報（スクリプトが自動設定）")]
+    public SpriteRenderer spriteRenderer; // プレハブのSpriteRendererをアタッチしてください
+    public string ingredientName = "";
+    [HideInInspector] public Transform targetTransform;
+
+    [Header("回収時の演出設定")]
+    public float flightDuration = 0.8f;  // 目標に到達するまでの秒数
+    public float flightHeight = 3.0f;    // 放物線の高さ（Y軸のジャンプ力）
+    public float rotationSpeed = 1080f;  // 飛行中のY軸回転速度
+
+    private bool isFlying = false;
+    private float flightTimer = 0f;
+    private Vector3 startPos;
+
+    // Spawnerから呼ばれて具材のデータをセットする関数
+    public void SetIngredient(string name, Sprite sprite)
+    {
+        ingredientName = name;
+        if (spriteRenderer != null && sprite != null)
+        {
+            spriteRenderer.sprite = sprite;
+        }
+    }
 
     void Update()
     {
-        // Space.Worldを指定して、傾きに関係なくワールド空間のZ軸マイナス方向へ進ませる
+        // 回収されて飛んでいる間の処理
+        if (isFlying)
+        {
+            FlyToTarget();
+            return; // 飛んでいる間は下にある通常の奥→手前の移動処理を行わない
+        }
+
+        // 通常の移動：Space.Worldを指定してワールド空間のZ軸マイナス方向へ進ませる
         transform.Translate(Vector3.back * speed * Time.deltaTime, Space.World);
 
         // 画面手前を通り過ぎた時の処理
@@ -21,26 +52,47 @@ public class Obstacle : MonoBehaviour
             if (isMustCatch)
             {
                 // 接触しなきゃいけないものをスルーしてしまったらゲームオーバー
-                //GameManager.instance.TriggerGameOver();
+                // GameManager.instance.TriggerGameOver();
             }
-            // オブジェクトを削除
             Destroy(gameObject);
         }
     }
 
-    // プレイヤーと接触した時の処理（ColliderのIsTriggerがオン、もしくは物理衝突時）
+    // ターゲットへ放物線を描いて飛んでいく処理
+    private void FlyToTarget()
+    {
+        if (targetTransform == null)
+        {
+            Destroy(gameObject); // ターゲットがない場合は即消滅
+            return;
+        }
+
+        flightTimer += Time.deltaTime;
+        float t = flightTimer / flightDuration;
+
+        if (t >= 1.0f)
+        {
+            Destroy(gameObject); // 到達したら消滅
+            return;
+        }
+
+        // 開始位置と目標位置の間を線形補間（XZ平面での移動）
+        Vector3 currentPos = Vector3.Lerp(startPos, targetTransform.position, t);
+        
+        // サイン波を使ってY軸にジャンプを加える（放物線の計算）
+        currentPos.y += Mathf.Sin(t * Mathf.PI) * flightHeight;
+
+        transform.position = currentPos;
+
+        // Y軸を中心に一定速度で回転
+        transform.Rotate(0f, rotationSpeed * Time.deltaTime, 0f, Space.World);
+    }
+
     void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            if (isMustCatch)
-            {
-                Destroy(gameObject);
-            }
-            else
-            {
-                GameManager.instance.TriggerGameOver();
-            }
+            HandleCollision();
         }
     }
 
@@ -48,14 +100,37 @@ public class Obstacle : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Player"))
         {
-            if (isMustCatch)
+            HandleCollision();
+        }
+    }
+
+    private void HandleCollision()
+    {
+        if (isFlying) return; // 既に飛んでいる場合は2重判定しない
+
+        if (isMustCatch)
+        {
+            // 拾うべき奴
+            Debug.Log($"{ingredientName}を獲得！");
+
+            // 当たり判定を即座に無効化（複数コライダーがある場合を考慮して配列で処理）
+            Collider[] colliders = GetComponents<Collider>();
+            foreach (Collider col in colliders)
             {
-                Destroy(gameObject);
+                col.enabled = false;
             }
-            else
-            {
-                GameManager.instance.TriggerGameOver();
-            }
+
+            // 飛行演出へ移行
+            isFlying = true;
+            startPos = transform.position;
+            flightTimer = 0f;
+        }
+        else
+        {
+            // 拾ってはいけない奴
+            Debug.Log("ダメージ！");
+            GameManager.instance.TakeDamage(); // ←これを追加
+            Destroy(gameObject);
         }
     }
 }
