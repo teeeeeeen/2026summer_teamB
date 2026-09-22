@@ -35,7 +35,7 @@ public class Spawner : MonoBehaviour
         GameObject prefabToSpawn = (Random.value < goodItemSpawnRate) ? goodObstaclePrefab : badObstaclePrefab;
 
         // 生成位置を決定（Xは固定、Yは上下ランダム、Zは0）
-        Vector3 spawnPos = new Vector3(Random.Range(-spawnXRange, spawnXRange), 4f, SpawnZ);
+        Vector3 spawnPos = new Vector3(Random.Range(-spawnXRange, spawnXRange), 4f, spawnZ);
 
         // オブジェクトを生成
         Instantiate(prefabToSpawn, spawnPos, Quaternion.identity);
