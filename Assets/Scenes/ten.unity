@@ -1108,8 +1108,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Timer
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: bff80e87d62634441856c4fdcb2c5c67, type: 2}
-  m_sharedMaterial: {fileID: -4337998527935584941, guid: bff80e87d62634441856c4fdcb2c5c67, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: bec590f2abd8dfb459cfb9b0185db4af, type: 2}
+  m_sharedMaterial: {fileID: -3458001313199664017, guid: bec590f2abd8dfb459cfb9b0185db4af, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1218,8 +1218,8 @@ MonoBehaviour:
   badObstaclePrefab: {fileID: 990116036940231049, guid: ef113f8bf8e5c1343a6766dc3603de9c, type: 3}
   goodObstaclePrefab: {fileID: 4764583298117179151, guid: 7f23d0e6ca303eb4daff096f958b973b, type: 3}
   spawnInterval: 1.5
-  spawnZRange: 4
-  spawnX: 15
+  spawnXRange: 4
+  spawnZ: 15
   goodItemSpawnRate: 0.5
 --- !u!4 &2117382565
 Transform:
