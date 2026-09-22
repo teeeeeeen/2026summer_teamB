@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(RawImage))]
-public class ScrollingBackground : MonoBehaviour
+public class ScrollingBack : MonoBehaviour
 {
     [Header("スクロール速度")]
     public Vector2 scrollSpeed = new Vector2(0.1f, 0.1f);
@@ -14,19 +14,20 @@ public class ScrollingBackground : MonoBehaviour
     void Start()
     {
         rawImage = GetComponent<RawImage>();
+
+        // 背景を繰り返し表示
         uvRect = rawImage.uvRect;
+        //rawImage.uvRect = uvRect;
     }
 
     void Update()
     {
-        // 選択中じゃなければ停止
         if (!isSelected)
             return;
 
-        // 選択中だけ斜めにスクロール
+        // 背景を斜めに動かす
         uvRect.position += scrollSpeed * Time.unscaledDeltaTime;
 
-        // RawImageに反映
         rawImage.uvRect = uvRect;
     }
 
