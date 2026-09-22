@@ -29,7 +29,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -31.89847, y: -0, z: -1.63252}
-  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Obstacle
   speed: 10
-  destroyX: -80
+  destroyZ: -40
   isMustCatch: 1
   sprites:
   - {fileID: -7863595167020143787, guid: 88bcde04a2c67da4da65cf6ba7b83303, type: 3}
