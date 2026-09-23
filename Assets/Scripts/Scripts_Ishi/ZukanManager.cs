@@ -10,11 +10,12 @@ public class ZukanManager : MonoBehaviour
     public MisoSoupData[] allMisoSoups;
     public GameObject buttonPrefab;
     public Transform contentPanel;
-
+    
     [Header("右側のUI参照")]
     public TextMeshProUGUI nameText;
     public Image iconImage;
     public TextMeshProUGUI descriptionText;
+    public TextMeshProUGUI ingredientsText;
 
     private void Start()
     {
@@ -54,12 +55,18 @@ public class ZukanManager : MonoBehaviour
     // ★右側の詳細を更新する処理
     public void UpdateDetailView(MisoSoupData data)
     {
+       if (ingredientsText != null)
+        {
+            ingredientsText.text = "【材料】\n" + data.ingredients; 
+            // ※「【材料】」という文字を頭に自動で付けるようにしています。不要なら data.ingredients だけにしてください。
+        }
+
         if (data.isUnlocked)
         {
             // 解放済み：綺麗に表示
             nameText.text = data.soupName;
             iconImage.sprite = data.soupIcon;
-            iconImage.color = Color.white; // 通常の色
+            iconImage.color = Color.white; 
             descriptionText.text = data.description;
         }
         else
@@ -67,8 +74,8 @@ public class ZukanManager : MonoBehaviour
             // 未開放：画像は黒塗り、名前は？？？
             nameText.text = "？？？";
             iconImage.sprite = data.soupIcon;
-            iconImage.color = Color.black; // 黒く塗りつぶしてシルエットにする
-            descriptionText.text = "まだ作っていません...";
+            iconImage.color = Color.black; 
+            descriptionText.text = "まだ発見していません。";
         }
     }
 }
