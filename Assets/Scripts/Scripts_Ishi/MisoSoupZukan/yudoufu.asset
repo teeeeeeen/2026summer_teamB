@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 72cf605ff401bdc4b9e11ac5a8cb29ef, type: 3}
+  m_Name: yudoufu
+  m_EditorClassIdentifier: Assembly-CSharp::MisoSoupData
+  soupName: "\u6E6F\u8C46\u8150"
+  soupIcon: {fileID: -6499943953294644122, guid: 26552ee2fb23fb04a89ae754df861dc7, type: 3}
+  description: "\u3082\u306F\u3084\u304A\u5473\u564C\u6C41\u306E\u67A0\u3092\u8D85\u3048\u3001\u307F\u305D\u3057\u308B\u306E\u5177\u306E\u4E2D\u3067\u3082\u3063\u3068\u3082\u4EBA\u6C17\u304C\u9AD8\u3044\u3068\u3055\u308C\u308B\u8C46\u8150\u306E\u30DD\u30C6\u30F3\u30B7\u30E3\u30EB\u3092\u6975\u9650\u307E\u3067\u5F15\u304D\u51FA\u3057\u305F\u4E00\u676F\u3002\u306A\u3081\u3089\u304B\u306A\u5927\u8C46\u306E\u512A\u3057\u3044\u7518\u307F\u304C\u3001\u5FC3\u3068\u4F53\u3092\u82AF\u304B\u3089\u6E29\u3081\u3066\u304F\u308C\u308B\u3002"
+  isUnlocked: 1
