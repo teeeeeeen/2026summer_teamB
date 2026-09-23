@@ -6,7 +6,7 @@ using System.Collections;
 public class SceneFade : MonoBehaviour
 {
     [Header("フェード画像")]
-    public Image fadeImage;
+    public RawImage fadeImage;
 
     [Header("フェード時間")]
     public float fadeDuration = 2.0f;
