@@ -10,10 +10,18 @@ public class MenuNavigator : MonoBehaviour
     public GameObject quitButton;
     public GameObject arrow;
 
+    [Header("サウンド")]
+    public AudioClip selectSound;
+    public AudioClip decideSound;
+
+    private AudioSource audioSource;
     private GameObject currentButton;
 
     void Start()
     {
+        // Audio Sourceを取得
+        audioSource = GetComponent<AudioSource>();
+
         // 最初はStartボタンを選択
         currentButton = startButton;
 
@@ -41,15 +49,18 @@ public class MenuNavigator : MonoBehaviour
                 currentButton = startButton;
             }
 
+            // 選択音
+            PlaySelectSound();
+
             SelectButton();
         }
 
         // Aキー → 左へ
         if (Keyboard.current.aKey.wasPressedThisFrame)
         {
-            if (currentButton == quitButton)
+            if (currentButton == startButton)
             {
-                currentButton = howToButton;
+                currentButton = quitButton;
             }
             else if (currentButton == howToButton)
             {
@@ -57,8 +68,11 @@ public class MenuNavigator : MonoBehaviour
             }
             else
             {
-                currentButton = quitButton;
+                currentButton = howToButton;
             }
+
+            // 選択音
+            PlaySelectSound();
 
             SelectButton();
         }
@@ -68,12 +82,33 @@ public class MenuNavigator : MonoBehaviour
             Keyboard.current.spaceKey.wasPressedThisFrame ||
             Keyboard.current.zKey.wasPressedThisFrame)
         {
+            // 決定音
+            PlayDecideSound();
+
             Button button = currentButton.GetComponent<Button>();
 
             if (button != null)
             {
                 button.onClick.Invoke();
             }
+        }
+    }
+
+    // 選択音
+    void PlaySelectSound()
+    {
+        if (selectSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(selectSound);
+        }
+    }
+
+    // 決定音
+    void PlayDecideSound()
+    {
+        if (decideSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(decideSound);
         }
     }
 

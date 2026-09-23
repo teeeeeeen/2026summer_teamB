@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class StartButton : MonoBehaviour
+public class HowButton : MonoBehaviour
 {
     public SceneFade sceneFade;
 
