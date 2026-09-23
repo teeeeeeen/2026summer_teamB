@@ -16,6 +16,8 @@ public class ZukanManager : MonoBehaviour
     public Image iconImage;
     public TextMeshProUGUI descriptionText;
     public TextMeshProUGUI ingredientsText;
+    [Header("特殊演出")]
+    public GameObject specialEffect;
 
     private void Start()
     {
@@ -52,30 +54,38 @@ public class ZukanManager : MonoBehaviour
         EventSystem.current.SetSelectedGameObject(targetButton);
     }
 
-    // ★右側の詳細を更新する処理
     public void UpdateDetailView(MisoSoupData data)
     {
-       if (ingredientsText != null)
+        if (ingredientsText != null)
         {
             ingredientsText.text = "【材料】\n" + data.ingredients; 
-            // ※「【材料】」という文字を頭に自動で付けるようにしています。不要なら data.ingredients だけにしてください。
         }
 
         if (data.isUnlocked)
         {
-            // 解放済み：綺麗に表示
             nameText.text = data.soupName;
             iconImage.sprite = data.soupIcon;
             iconImage.color = Color.white; 
             descriptionText.text = data.description;
+
+            // フラグがONならエフェクトを表示、OFFなら隠す
+            if (specialEffect != null)
+            {
+                specialEffect.SetActive(data.isSuperLegendary);
+            }
         }
         else
         {
-            // 未開放：画像は黒塗り、名前は？？？
             nameText.text = "？？？";
             iconImage.sprite = data.soupIcon;
             iconImage.color = Color.black; 
             descriptionText.text = "まだ発見していません。";
+
+            // 未開放の時は光らせない
+            if (specialEffect != null)
+            {
+                specialEffect.SetActive(false);
+            }
         }
     }
 }
