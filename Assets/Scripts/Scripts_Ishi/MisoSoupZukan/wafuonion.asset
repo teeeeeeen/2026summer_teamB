@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 72cf605ff401bdc4b9e11ac5a8cb29ef, type: 3}
+  m_Name: wafuonion
+  m_EditorClassIdentifier: Assembly-CSharp::MisoSoupData
+  soupName: "\u548C\u98A8\u30AA\u30CB\u30AA\u30F3\u30B9\u30FC\u30D7"
+  soupIcon: {fileID: -5768364531109799046, guid: 1067a79bfd54efb44a064ffdf870dfd2, type: 3}
+  description: 
+  isUnlocked: 1
