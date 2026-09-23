@@ -15,8 +15,13 @@ public class Spawner : MonoBehaviour
     public GameObject badObstaclePrefab;  // 接触してはいけないもの
     public GameObject goodObstaclePrefab; // 接触しなきゃいけないもの
 
-    [Header("具材の設定")]
-    public IngredientData[] ingredients; // ここに8種類の具材（名前とスプライト）を登録する
+    [Header("良い具材の設定")]
+    [Tooltip("ここに良い具材（名前とスプライト）を登録する")]
+    public IngredientData[] goodIngredients; 
+
+    [Header("悪い障害物の設定")]
+    [Tooltip("ここに悪い障害物（スプライトのみ）を登録する")]
+    public Sprite[] badSprites; 
 
     [Header("演出の設定")]
     public Transform collectionTarget; // 「接触していいやつ」が飛んでいく目標となるGameObject
@@ -50,7 +55,7 @@ public class Spawner : MonoBehaviour
     {
         timer += Time.deltaTime;
 
-        // 【修正】GameManagerから現在の倍率を取得し、間隔を短く（速く）する
+        // GameManagerから現在の倍率を取得し、間隔を短く（速く）する
         float currentMultiplier = GameManager.instance != null ? GameManager.instance.currentSpeedMultiplier : 1f;
         float currentInterval = spawnInterval / currentMultiplier;
 
@@ -124,7 +129,8 @@ public class Spawner : MonoBehaviour
     // 1個のオブジェクトを指定したX座標に生成する処理
     void SpawnSingle(float xPos)
     {
-        GameObject prefabToSpawn = (Random.value < goodItemSpawnRate) ? goodObstaclePrefab : badObstaclePrefab;
+        bool isGoodItem = Random.value < goodItemSpawnRate;
+        GameObject prefabToSpawn = isGoodItem ? goodObstaclePrefab : badObstaclePrefab;
 
         Vector3 spawnPos = new Vector3(xPos, spawnY, spawnZ);
 
@@ -137,11 +143,23 @@ public class Spawner : MonoBehaviour
         {
             obstacle.targetTransform = collectionTarget;
 
-            if (ingredients != null && ingredients.Length > 0)
+            if (isGoodItem)
             {
-                // 登録された具材の中からランダムに1つ選ぶ
-                int randIndex = Random.Range(0, ingredients.Length);
-                obstacle.SetIngredient(ingredients[randIndex].ingredientName, ingredients[randIndex].sprite);
+                // 良いアイテムの場合：IngredientDataから名前とスプライトを渡す
+                if (goodIngredients != null && goodIngredients.Length > 0)
+                {
+                    int randIndex = Random.Range(0, goodIngredients.Length);
+                    obstacle.SetIngredient(goodIngredients[randIndex].ingredientName, goodIngredients[randIndex].sprite);
+                }
+            }
+            else
+            {
+                // 悪いアイテムの場合：スプライトのみを渡し、名前は空文字にする
+                if (badSprites != null && badSprites.Length > 0)
+                {
+                    int randIndex = Random.Range(0, badSprites.Length);
+                    obstacle.SetIngredient("", badSprites[randIndex]);
+                }
             }
         }
     }
