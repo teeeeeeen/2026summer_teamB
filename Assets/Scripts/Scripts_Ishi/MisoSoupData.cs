@@ -9,7 +9,8 @@ public class MisoSoupData : ScriptableObject
     [Header("解放条件（材料）")]
     [TextArea(2, 3)]              // インスペクターで複数行入力しやすくする
     public string ingredients;    // 材料のテキスト
-
+    [Header("特殊演出")]
+    public bool isSuperLegendary = false;//最強の味噌汁？
     [TextArea(3, 5)]
     public string description;    // 説明文
     public bool isUnlocked = false; // 解放フラグ
