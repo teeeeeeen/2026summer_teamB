@@ -25,8 +25,10 @@ public class DecoSpawner : MonoBehaviour
     void Update()
     {
         timer += Time.deltaTime;
+        float currentMultiplier = GameManager.instance != null ? GameManager.instance.currentSpeedMultiplier : 1f;
+        float currentInterval = spawnInterval / currentMultiplier;
 
-        if (timer >= spawnInterval)
+        if (timer >= currentInterval)
         {
             SpawnDecorations();
             timer = 0f;

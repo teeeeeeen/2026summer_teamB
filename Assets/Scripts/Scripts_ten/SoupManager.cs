@@ -2,15 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.UI; // Image用に必要
+using TMPro; // TextMeshProを使うために必要
+using UnityEngine.InputSystem; // 【追加】新しい入力システムを使うために必要
 
 public class SoupManager : MonoBehaviour
 {
     public static SoupManager instance;
 
     [Header("UI設定：テキスト")]
-    public Text displayText;           // 投入中や完成品の名前を表示するテキスト
-    public float textSpeed = 0.1f;     // 文字が流れるスピード
+    public TextMeshProUGUI displayText;        // 投入中や完成品の名前を表示するテキスト（TMPに変更）
+    public float textSpeed = 0.1f;             // 文字が流れるスピード
 
     [Header("UI設定：アイコン（8個）")]
     public Image[] ingredientIcons; 
@@ -19,7 +21,21 @@ public class SoupManager : MonoBehaviour
     public Image finalSoupImage;    
     [Tooltip("0〜16のIDに対応する17枚のスプライトをセットしてください")]
     public Sprite[] finalSoupSprites; 
-    public float showDuration = 3.0f;  // 表示しておく秒数
+    public float showDuration = 3.0f;          // 表示しておく秒数
+
+    [Header("スコア設定")]
+    public TextMeshProUGUI totalScoreText;     // 合計スコアを表示するTMP
+    public TextMeshProUGUI addedScoreText;     // 加算スコア（+3Pなど）を表示するTMP
+    private int totalScore = 0;                // 現在の合計スコア
+
+    [Header("リザルト（結果）設定")]
+    public TextMeshProUGUI resultCurrentScoreText;    // ゲームオーバー画面等で「今回のスコア」を表示するTMP
+    [Tooltip("1位から3位までを表示するTMPを3つセットしてください")]
+    public TextMeshProUGUI[] resultHighScoreTexts;    // ハイスコアを表示するTMP配列（要素数3）
+    private List<int> savedHighScores = new List<int>(); // 保存されているハイスコア
+
+    [Header("オーディオ設定")]
+    public AudioSource completeSound;          // 味噌汁完成時の効果音
 
     public enum Ingredient
     {
@@ -31,6 +47,7 @@ public class SoupManager : MonoBehaviour
     
     private Coroutine currentAnimationRoutine = null;
     private Coroutine currentTextRoutine = null;
+    private Coroutine currentAddedScoreRoutine = null;
 
     void Awake()
     {
@@ -47,6 +64,45 @@ public class SoupManager : MonoBehaviour
         if (displayText != null)
         {
             displayText.text = "";
+        }
+        if (addedScoreText != null)
+        {
+            addedScoreText.gameObject.SetActive(false);
+        }
+
+        // スコアの初期化
+        totalScore = 0;
+        if (totalScoreText != null) totalScoreText.text = $"SCORE: {totalScore}";
+
+        // 保存されているハイスコア（上位3件）を読み込む
+        savedHighScores.Add(PlayerPrefs.GetInt("ScoreRank1", 0));
+        savedHighScores.Add(PlayerPrefs.GetInt("ScoreRank2", 0));
+        savedHighScores.Add(PlayerPrefs.GetInt("ScoreRank3", 0));
+        
+        UpdateResultUI();
+    }
+
+    void Update()
+    {
+        // 【修正】新しいInput Systemに対応したキー判定
+        if (Keyboard.current != null)
+        {
+            bool isCtrl = Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed;
+            bool isShift = Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed;
+            bool isR = Keyboard.current.rKey.wasPressedThisFrame;
+
+            // Ctrl + Shift + R でランキングリセット
+            if (isCtrl && isShift && isR)
+            {
+                PlayerPrefs.DeleteKey("ScoreRank1");
+                PlayerPrefs.DeleteKey("ScoreRank2");
+                PlayerPrefs.DeleteKey("ScoreRank3");
+                PlayerPrefs.Save();
+
+                savedHighScores = new List<int> { 0, 0, 0 };
+                UpdateResultUI();
+                Debug.Log("ハイスコアをリセットしました。");
+            }
         }
     }
 
@@ -81,6 +137,24 @@ public class SoupManager : MonoBehaviour
             // 8個集まった時の処理
             int soupId = EvaluateSoupId(currentIngredients);
             string resultText = GetSoupText(soupId);
+            int earnedScore = GetSoupScore(soupId);
+
+            // 効果音を鳴らす
+            if (completeSound != null)
+            {
+                completeSound.Play();
+            }
+
+            // スコア加算
+            totalScore += earnedScore;
+            if (totalScoreText != null) totalScoreText.text = $"SCORE: {totalScore}";
+
+            // 加算スコア（+〇P）の表示アニメーション
+            if (currentAddedScoreRoutine != null) StopCoroutine(currentAddedScoreRoutine);
+            currentAddedScoreRoutine = StartCoroutine(ShowAddedScoreRoutine(earnedScore));
+
+            // リザルト画面をいつでも表示できるよう最新状態に更新
+            UpdateResultUI();
 
             // テキスト流し開始
             if (currentTextRoutine != null) StopCoroutine(currentTextRoutine);
@@ -196,6 +270,28 @@ public class SoupManager : MonoBehaviour
         }
     }
 
+    // スコアの配点を算出する処理
+    private int GetSoupScore(int soupId)
+    {
+        if (soupId == 0) return 4;                    // 超最強の味噌汁
+        if (soupId >= 1 && soupId <= 8) return 3;     // 同じ具材8個
+        if (soupId >= 9 && soupId <= 15) return 2;    // 特定の組み合わせ
+        return 1;                                     // 具だくさん（16）
+    }
+
+    // 加算スコアを表示して消すコルーチン
+    private IEnumerator ShowAddedScoreRoutine(int score)
+    {
+        if (addedScoreText == null) yield break;
+
+        addedScoreText.text = $"+{score}P";
+        addedScoreText.gameObject.SetActive(true);
+
+        yield return new WaitForSeconds(1.5f); // 1.5秒間表示
+
+        addedScoreText.gameObject.SetActive(false);
+    }
+
     // 完成品の名前を流すコルーチン
     private IEnumerator StreamText(string text)
     {
@@ -236,5 +332,42 @@ public class SoupManager : MonoBehaviour
 
         finalSoupImage.transform.localScale = Vector3.one;
         finalSoupImage.gameObject.SetActive(false);
+    }
+
+    // 今回のスコアを含めたハイスコアボードを更新する処理
+    private void UpdateResultUI()
+    {
+        // 今回のスコアをリストに加えてソート（降順）
+        List<int> displayScores = new List<int>(savedHighScores);
+        displayScores.Add(totalScore);
+        displayScores.Sort((a, b) => b.CompareTo(a));
+
+        if (resultHighScoreTexts != null)
+        {
+            for (int i = 0; i < resultHighScoreTexts.Length; i++)
+            {
+                if (resultHighScoreTexts[i] != null && i < displayScores.Count)
+                {
+                    resultHighScoreTexts[i].text = $"{i + 1}位: {displayScores[i]}";
+                }
+            }
+        }
+
+        if (resultCurrentScoreText != null)
+        {
+            resultCurrentScoreText.text = $"今回のスコア: {totalScore}";
+        }
+    }
+
+    // シーン遷移時（もう一度遊ぶ）やゲーム終了時に現在のスコアを含めて保存する
+    void OnDestroy()
+    {
+        savedHighScores.Add(totalScore);
+        savedHighScores.Sort((a, b) => b.CompareTo(a));
+        
+        PlayerPrefs.SetInt("ScoreRank1", savedHighScores[0]);
+        PlayerPrefs.SetInt("ScoreRank2", savedHighScores[1]);
+        PlayerPrefs.SetInt("ScoreRank3", savedHighScores[2]);
+        PlayerPrefs.Save();
     }
 }
