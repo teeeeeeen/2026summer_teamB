@@ -130,7 +130,6 @@ public class SoupManager : MonoBehaviour
         {
             // 投入中テキストの更新（テキストアニメーション中でなければ表示）
             if (currentTextRoutine != null) StopCoroutine(currentTextRoutine);
-            if (displayText != null) displayText.text = $"具材を投入中... ({currentCount}/8)";
         }
         else
         {

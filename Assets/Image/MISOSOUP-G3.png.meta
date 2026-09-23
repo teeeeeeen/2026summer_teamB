@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: f653d0d2bd22ab146a5e2da47de4a7a1
+guid: 92fd5306bc0d7134791c834f21b9ae2d
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 7305511512365995508
-    second: GUZAISLOT2_0
+      213: 4429031453726685406
+    second: MISOSOUP-G3_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -40,8 +40,8 @@ TextureImporter:
     filterMode: 1
     aniso: 1
     mipBias: 0
-    wrapU: 1
-    wrapV: 1
+    wrapU: 0
+    wrapV: 0
     wrapW: 0
   nPOTScale: 0
   lightmap: 0
@@ -115,13 +115,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: GUZAISLOT2_0
+      name: MISOSOUP-G3_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 1980
-        height: 1080
+        width: 600
+        height: 600
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -130,8 +130,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 4f51a15a304626560800000000000000
-      internalID: 7305511512365995508
+      spriteID: ed8396224a4177d30800000000000000
+      internalID: 4429031453726685406
       vertices: []
       indices: 
       edges: []
@@ -150,7 +150,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      GUZAISLOT2_0: 7305511512365995508
+      MISOSOUP-G3_0: 4429031453726685406
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

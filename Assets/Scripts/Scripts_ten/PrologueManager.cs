@@ -3,7 +3,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro; 
 using UnityEngine.EventSystems; 
-using UnityEngine.InputSystem; 
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement; 
 
 [System.Serializable]
 public class ProloguePage
@@ -25,8 +26,10 @@ public class PrologueManager : MonoBehaviour
 
     [Header("フェード設定")]
     [Tooltip("画面を覆うフェード用のImage")]
-    public Image fadeMask;
-    [Tooltip("フェードにかかる時間（秒）")]
+    public RawImage fadeMask;
+    [Tooltip("開始時のフェードインにかかる時間（秒）")]
+    public float fadeInDuration = 2.0f; // 追加：フェードイン時間
+    [Tooltip("終了時のフェードアウトにかかる時間（秒）")]
     public float fadeDuration = 1.0f;
 
     [Header("サウンド設定")]
@@ -41,31 +44,58 @@ public class PrologueManager : MonoBehaviour
     public int skipTargetIndex = 2;      
     public ProloguePage[] pages;         
 
+    [Header("シーン遷移設定")]
+    [Tooltip("プロローグ終了後に移動するシーンの名前")]
+    public string nextSceneName;
+    [Tooltip("フェード完了からシーン遷移までの待ち時間（秒）")]
+    public float waitBeforeTransition = 4.0f; 
+
     private int currentPage = 0;
     private bool isTyping = false;
-    private bool isFinished = false; // 終了処理中かどうかの判定フラグ
+    private bool isFinished = false; 
+    private bool isInputEnabled = false; // 追加：序盤の入力ロック用フラグ
     private Coroutine typingCoroutine;
 
     void Start()
     {
-        // フェード用のマスクが設定されていれば、開始時は透明にしておく
-        if (fadeMask != null)
-        {
-            Color c = fadeMask.color;
-            c.a = 0f;
-            fadeMask.color = c;
-            fadeMask.gameObject.SetActive(false);
-        }
-
+        // 初期状態の表示リセット
+        prologueText.text = "";
+        if (nextPromptUI != null) nextPromptUI.SetActive(false);
+        
         if (pages.Length > 0)
         {
-            ShowPage(currentPage);
+            // フェードイン中に背景が空にならないよう、最初の背景画像をあらかじめセット
+            if (pages[0].backgroundImage != null && backgroundImage != null)
+            {
+                backgroundImage.sprite = pages[0].backgroundImage;
+            }
+        }
+
+        if (fadeMask != null)
+        {
+            // フェードイン開始
+            Color c = fadeMask.color;
+            c.a = 1f;
+            fadeMask.color = c;
+            fadeMask.gameObject.SetActive(true);
+            
+            StartCoroutine(FadeInCoroutine());
+        }
+        else
+        {
+            // マスクがない場合のフォールバック
+            isInputEnabled = true;
+            if (pages.Length > 0)
+            {
+                ShowPage(currentPage);
+            }
         }
     }
 
     void Update()
     {
-        if (isFinished) return; // フェード中（終了処理中）は入力を受け付けない
+        // フェード完了前（開始時）、または終了処理中は入力を受け付けない
+        if (isFinished || !isInputEnabled) return; 
 
         bool isClicked = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
         bool isEnterPressed = Keyboard.current != null && (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame);
@@ -76,21 +106,63 @@ public class PrologueManager : MonoBehaviour
         }
     }
 
+    // 追加：フェードイン処理
+    IEnumerator FadeInCoroutine()
+    {
+        float timer = 0f;
+        bool hasStartedTyping = false;
+        
+        // フェードが完了する0.5秒前の時間を計算 (最低でも0秒以上にする)
+        float startTypingTime = Mathf.Max(0f, fadeInDuration - 0.5f);
+        Color c = fadeMask.color;
+
+        while (timer < fadeInDuration)
+        {
+            timer += Time.deltaTime;
+            c.a = Mathf.Lerp(1f, 0f, timer / fadeInDuration);
+            fadeMask.color = c;
+
+            // 指定の時間を迎えたら、フェード中であってもテキスト表示と入力受付を開始する
+            if (!hasStartedTyping && timer >= startTypingTime)
+            {
+                hasStartedTyping = true;
+                isInputEnabled = true; // 入力ロック解除
+                if (pages.Length > 0)
+                {
+                    ShowPage(currentPage);
+                }
+            }
+
+            yield return null;
+        }
+
+        c.a = 0f;
+        fadeMask.color = c;
+        fadeMask.gameObject.SetActive(false);
+
+        // 万が一フェードイン時間が短すぎて呼ばれなかった場合の保険
+        if (!hasStartedTyping)
+        {
+            isInputEnabled = true;
+            if (pages.Length > 0)
+            {
+                ShowPage(currentPage);
+            }
+        }
+    }
+
     void HandleInput()
     {
         if (isTyping)
         {
-            // 文字送り中のクリック：即座に全文表示
             StopCoroutine(typingCoroutine);
             prologueText.text = pages[currentPage].text;
             isTyping = false;
 
-            // 全表示した瞬間に「次へ」UIをオンにする
             if (nextPromptUI != null) nextPromptUI.SetActive(true);
         }
         else
         {
-            // 表示完了後のクリック：次のページへ
             currentPage++;
             if (currentPage < pages.Length)
             {
@@ -112,7 +184,6 @@ public class PrologueManager : MonoBehaviour
             skipButton.SetActive(index < skipTargetIndex);
         }
 
-        // 新しいページに入ったら「次へ」UIは一旦隠す
         if (nextPromptUI != null) nextPromptUI.SetActive(false);
 
         if (pages[index].backgroundImage != null && backgroundImage != null)
@@ -146,13 +217,12 @@ public class PrologueManager : MonoBehaviour
 
         isTyping = false;
         
-        // 文字送りが自然に終わった時に「次へ」UIをオンにする
         if (nextPromptUI != null) nextPromptUI.SetActive(true);
     }
 
     public void Skip()
     {
-        if (isFinished || currentPage >= skipTargetIndex) return;
+        if (isFinished || currentPage >= skipTargetIndex || !isInputEnabled) return;
 
         currentPage = skipTargetIndex;
         ShowPage(currentPage);
@@ -160,7 +230,7 @@ public class PrologueManager : MonoBehaviour
 
     void EndPrologue()
     {
-        isFinished = true; // 入力をブロック
+        isFinished = true; 
         
         if (nextPromptUI != null) nextPromptUI.SetActive(false);
 
@@ -179,7 +249,7 @@ public class PrologueManager : MonoBehaviour
         fadeMask.gameObject.SetActive(true);
         float timer = 0f;
         Color startColor = fadeMask.color;
-        Color endColor = new Color(startColor.r, startColor.g, startColor.b, 1f); // アルファ値を1（不透明）に
+        Color endColor = new Color(startColor.r, startColor.g, startColor.b, 1f); 
 
         while (timer < fadeDuration)
         {
@@ -194,7 +264,20 @@ public class PrologueManager : MonoBehaviour
 
     void CompletePrologue()
     {
-        Debug.Log("フェード完了。本編へ移行します。");
-        // ここに SceneManager.LoadScene("MainScene"); などのシーン遷移処理を追加してください
+        StartCoroutine(WaitAndLoadScene());
+    }
+
+    IEnumerator WaitAndLoadScene()
+    {
+        yield return new WaitForSeconds(waitBeforeTransition);
+
+        if (!string.IsNullOrEmpty(nextSceneName))
+        {
+            SceneManager.LoadScene(nextSceneName);
+        }
+        else
+        {
+            Debug.LogWarning("遷移先のシーン名がインスペクターで設定されていません。");
+        }
     }
 }
