@@ -26,7 +26,7 @@ public class Obstacle : MonoBehaviour
     private float flightTimer = 0f;
     private Vector3 startPos;
     
-    // 【追加】音の制御と遅延破棄用のフラグ
+    // 音の制御と遅延破棄用のフラグ
     private bool hasPlayedPochan = false; 
     private bool isReachedTarget = false; 
 
@@ -52,8 +52,11 @@ public class Obstacle : MonoBehaviour
             return; 
         }
 
+        // 【修正】GameManagerから現在の倍率を取得して速度に乗算する
+        float currentMultiplier = GameManager.instance != null ? GameManager.instance.currentSpeedMultiplier : 1f;
+
         // 通常の移動：Space.Worldを指定してワールド空間のZ軸マイナス方向へ進ませる
-        transform.Translate(Vector3.back * speed * Time.deltaTime, Space.World);
+        transform.Translate(Vector3.back * speed * currentMultiplier * Time.deltaTime, Space.World);
 
         // 画面手前を通り過ぎた時の処理
         if (transform.position.z < destroyZ)
@@ -78,7 +81,7 @@ public class Obstacle : MonoBehaviour
         flightTimer += Time.deltaTime;
         float t = flightTimer / flightDuration;
 
-        // 【修正1】まだ鳴らしていなければ1回だけ鳴らす（メッチャ鳴る問題の解決）
+        // まだ鳴らしていなければ1回だけ鳴らす
         if (t >= 0.9f && !hasPlayedPochan)
         {
             if (pochanSound != null)
@@ -93,7 +96,7 @@ public class Obstacle : MonoBehaviour
             t = 1.0f; // 最後の位置をぴったり合わせる
             isReachedTarget = true; // Updateの処理を止めるフラグを立てる
 
-            // 【修正2】すぐにDestroyせず、見た目を消して音が鳴り終わるのを待つ（音が途切れる問題の解決）
+            // すぐにDestroyせず、見た目を消して音が鳴り終わるのを待つ
             if (spriteRenderer != null)
             {
                 spriteRenderer.enabled = false;
@@ -172,8 +175,11 @@ public class Obstacle : MonoBehaviour
         else
         {
             Debug.Log("ダメージ！");
-            GameManager.instance.TakeDamage();
-            Destroy(gameObject); // ダメージ時はGameManager側で音を鳴らしているので即消しでOK
+            if (GameManager.instance != null)
+            {
+                GameManager.instance.TakeDamage();
+            }
+            Destroy(gameObject);
         }
     }
 }

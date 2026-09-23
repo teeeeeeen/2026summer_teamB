@@ -50,7 +50,11 @@ public class Spawner : MonoBehaviour
     {
         timer += Time.deltaTime;
 
-        if (timer >= spawnInterval)
+        // 【修正】GameManagerから現在の倍率を取得し、間隔を短く（速く）する
+        float currentMultiplier = GameManager.instance != null ? GameManager.instance.currentSpeedMultiplier : 1f;
+        float currentInterval = spawnInterval / currentMultiplier;
+
+        if (timer >= currentInterval)
         {
             SpawnMultiple();
             timer = 0f;
