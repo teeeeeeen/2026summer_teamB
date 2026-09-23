@@ -19,10 +19,16 @@ public class Obstacle : MonoBehaviour
     public float flightDuration = 0.8f;  // 目標に到達するまでの秒数
     public float flightHeight = 3.0f;    // 放物線の高さ（Y軸のジャンプ力）
     public float rotationSpeed = 1080f;  // 飛行中のY軸回転速度
+    public AudioSource catchSound;        // 回収時の効果音
+    public AudioSource pochanSound;       // ぽちゃん音の効果音
 
     private bool isFlying = false;
     private float flightTimer = 0f;
     private Vector3 startPos;
+    
+    // 【追加】音の制御と遅延破棄用のフラグ
+    private bool hasPlayedPochan = false; 
+    private bool isReachedTarget = false; 
 
     // Spawnerから呼ばれて具材のデータをセットする関数
     public void SetIngredient(string name, Sprite sprite)
@@ -36,6 +42,9 @@ public class Obstacle : MonoBehaviour
 
     void Update()
     {
+        // ターゲットに到達した後は、音が鳴り終わって削除されるのを待つだけなので何もしない
+        if (isReachedTarget) return;
+
         // 回収されて飛んでいる間の処理
         if (isFlying)
         {
@@ -69,10 +78,36 @@ public class Obstacle : MonoBehaviour
         flightTimer += Time.deltaTime;
         float t = flightTimer / flightDuration;
 
+        // 【修正1】まだ鳴らしていなければ1回だけ鳴らす（メッチャ鳴る問題の解決）
+        if (t >= 0.9f && !hasPlayedPochan)
+        {
+            if (pochanSound != null)
+            {
+                pochanSound.Play();
+            }
+            hasPlayedPochan = true; // フラグを立てて2回目以降を防ぐ
+        }
+
         if (t >= 1.0f)
         {
-            Destroy(gameObject); 
-            return;
+            t = 1.0f; // 最後の位置をぴったり合わせる
+            isReachedTarget = true; // Updateの処理を止めるフラグを立てる
+
+            // 【修正2】すぐにDestroyせず、見た目を消して音が鳴り終わるのを待つ（音が途切れる問題の解決）
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.enabled = false;
+            }
+
+            // オーディオクリップの長さを取得（設定されていない場合は余裕を持って2秒待つ）
+            float delay = 2f;
+            if (pochanSound != null && pochanSound.clip != null)
+            {
+                delay = pochanSound.clip.length;
+            }
+            
+            // 指定した秒数（delay）が経過した後にオブジェクトを完全に削除する
+            Destroy(gameObject, delay);
         }
 
         // 開始位置と目標位置の間を線形補間（XZ平面での移動）
@@ -84,7 +119,7 @@ public class Obstacle : MonoBehaviour
         transform.position = currentPos;
 
         // Y軸を中心に一定速度で回転
-        transform.Rotate(0f, rotationSpeed * Time.deltaTime, 0f, Space.World);
+        transform.Rotate(0f, rotationSpeed * Time.deltaTime, 0f, Space.Self);
     }
 
     void OnTriggerEnter(Collider other)
@@ -128,12 +163,17 @@ public class Obstacle : MonoBehaviour
             isFlying = true;
             startPos = transform.position;
             flightTimer = 0f;
+            
+            if (catchSound != null)
+            {
+                catchSound.Play();
+            }
         }
         else
         {
             Debug.Log("ダメージ！");
             GameManager.instance.TakeDamage();
-            Destroy(gameObject);
+            Destroy(gameObject); // ダメージ時はGameManager側で音を鳴らしているので即消しでOK
         }
     }
 }
