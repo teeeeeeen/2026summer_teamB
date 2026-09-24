@@ -104,13 +104,13 @@ public class SoupManager : MonoBehaviour
             }
 
             // 【追加】デバッグ用：F2キーを押すとスコアを+10加算する
-            //if (Keyboard.current.f2Key.wasPressedThisFrame)
-            //{
-            //    totalScore += 10;
-            //    if (totalScoreText != null) totalScoreText.text = $"SCORE: {totalScore}";
-            //    UpdateResultUI();
-            //    Debug.Log($"[Debug] スコアを+10加算しました。現在のスコア: {totalScore}");
-            // }
+            if (Keyboard.current.f2Key.wasPressedThisFrame)
+            {
+                totalScore += 10;
+                if (totalScoreText != null) totalScoreText.text = $"SCORE: {totalScore}";
+                UpdateResultUI();
+                Debug.Log($"[Debug] スコアを+10加算しました。現在のスコア: {totalScore}");
+            }
         }
     }
 
