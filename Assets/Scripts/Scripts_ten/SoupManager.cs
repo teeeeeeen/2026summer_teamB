@@ -336,7 +336,7 @@ public class SoupManager : MonoBehaviour
             {
                 if (resultHighScoreTexts[i] != null && i < displayScores.Count)
                 {
-                    resultHighScoreTexts[i].text = $"{i + 1}位: {displayScores[i]}";
+                    resultHighScoreTexts[i].text = $"{displayScores[i]}";
                 }
             }
         }
