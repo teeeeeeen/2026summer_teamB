@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/suika_test.unity
+    guid: 8d1d15c5331f7cb449ccdc39aa86bf74
+  - enabled: 1
     path: Assets/Scenes/suika.unity
     guid: da7769ac91ad923408c796d71b694513
   - enabled: 1
@@ -17,9 +20,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Main.unity
     guid: 3e0002357dc96634ebb57baf684af1f8
-  - enabled: 1
-    path: Assets/Scenes/suika_test.unity
-    guid: 8d1d15c5331f7cb449ccdc39aa86bf74
   - enabled: 1
     path: Assets/Scenes/Ishii4.unity
     guid: 265452df3d9847f4f8618dbe5c559f07
