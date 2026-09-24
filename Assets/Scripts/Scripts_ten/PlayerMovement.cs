@@ -90,18 +90,20 @@ public class PlayerMovement : MonoBehaviour
     {
         if (GameManager.instance != null && GameManager.instance.isPaused) return;
 
-        // 1. 移動処理 (物理エンジンと衝突しないよう Rigidbody.MovePosition を使用)
-        Vector3 currentPos = rb.position;
-        Vector3 newPosition = currentPos;
+        // 1. 移動処理 (物理エンジンと重力を活かすため、Velocityを直接操作する)
+        Vector3 currentVel = rb.linearVelocity;
+        currentVel.x = moveInput.x * moveSpeed;
+        currentVel.z = moveInput.y * moveSpeed;
+        rb.linearVelocity = currentVel;
 
-        // FixedUpdate内では Time.fixedDeltaTime を使用
-        newPosition.x += moveInput.x * moveSpeed * Time.fixedDeltaTime;
-        newPosition.x = Mathf.Clamp(newPosition.x, minX, maxX);
-
-        newPosition.z += moveInput.y * moveSpeed * Time.fixedDeltaTime;
-        newPosition.z = Mathf.Clamp(newPosition.z, minZ, maxZ);
-
-        rb.MovePosition(newPosition);
+        // 移動制限のクランプ (範囲外に出た場合のみ位置を補正)
+        Vector3 pos = rb.position;
+        if (pos.x < minX || pos.x > maxX || pos.z < minZ || pos.z > maxZ)
+        {
+            pos.x = Mathf.Clamp(pos.x, minX, maxX);
+            pos.z = Mathf.Clamp(pos.z, minZ, maxZ);
+            rb.position = pos;
+        }
         
         // 2. 回転処理 (Rigidbody.MoveRotation を使用)
         Quaternion targetRot = startRotation * Quaternion.Euler(currentPitch, 0f, currentRoll);
