@@ -4,14 +4,14 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI; // Image用に必要
 using TMPro; // TextMeshProを使うために必要
-using UnityEngine.InputSystem; // 【追加】新しい入力システムを使うために必要
+using UnityEngine.InputSystem; // 新しい入力システムを使うために必要
 
 public class SoupManager : MonoBehaviour
 {
     public static SoupManager instance;
 
     [Header("UI設定：テキスト")]
-    public TextMeshProUGUI displayText;        // 投入中や完成品の名前を表示するテキスト（TMPに変更）
+    public TextMeshProUGUI displayText;        // 投入中や完成品の名前を表示するテキスト（TMP）
     public float textSpeed = 0.1f;             // 文字が流れるスピード
 
     [Header("UI設定：アイコン（8個）")]
@@ -84,24 +84,22 @@ public class SoupManager : MonoBehaviour
 
     void Update()
     {
-        // 【修正】新しいInput Systemに対応したキー判定
+        // 新しいInput Systemに対応したキー判定
         if (Keyboard.current != null)
         {
             bool isCtrl = Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed;
             bool isShift = Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed;
             bool isR = Keyboard.current.rKey.wasPressedThisFrame;
 
-            // Ctrl + Shift + R でランキングリセット
+            // Ctrl + Shift + R でランキングと図鑑データをリセット
             if (isCtrl && isShift && isR)
             {
-                PlayerPrefs.DeleteKey("ScoreRank1");
-                PlayerPrefs.DeleteKey("ScoreRank2");
-                PlayerPrefs.DeleteKey("ScoreRank3");
+                PlayerPrefs.DeleteAll(); // ランキングと図鑑を含むすべてのセーブデータを消去
                 PlayerPrefs.Save();
 
                 savedHighScores = new List<int> { 0, 0, 0 };
                 UpdateResultUI();
-                Debug.Log("ハイスコアをリセットしました。");
+                Debug.Log("ハイスコアと図鑑データをリセットしました。");
             }
         }
     }
@@ -126,17 +124,16 @@ public class SoupManager : MonoBehaviour
         currentIngredients.Add(ing);
         currentCount++;
 
-        if (currentCount < 8)
+        // 8個集まった時の処理
+        if (currentCount >= 8)
         {
-            // 投入中テキストの更新（テキストアニメーション中でなければ表示）
-            if (currentTextRoutine != null) StopCoroutine(currentTextRoutine);
-        }
-        else
-        {
-            // 8個集まった時の処理
             int soupId = EvaluateSoupId(currentIngredients);
             string resultText = GetSoupText(soupId);
             int earnedScore = GetSoupScore(soupId);
+
+            // 【追加】図鑑用に完成した味噌汁を名前ベースでPlayerPrefsに保存
+            PlayerPrefs.SetInt("UnlockedSoup_" + resultText, 1);
+            PlayerPrefs.Save();
 
             // 効果音を鳴らす
             if (completeSound != null)

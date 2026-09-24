@@ -30,6 +30,10 @@ public class ZukanManager : MonoBehaviour
 
         foreach (MisoSoupData data in allMisoSoups)
         {
+            // 【追加】SoupManagerで保存したアンロック状況を読み込む
+            // 保存データが "1" ならアンロック済みにする
+            data.isUnlocked = PlayerPrefs.GetInt("UnlockedSoup_" + data.soupName, 0) == 1;
+
             GameObject newButton = Instantiate(buttonPrefab, contentPanel);
             
             ZukanButtonNode node = newButton.GetComponent<ZukanButtonNode>();

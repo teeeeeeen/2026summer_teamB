@@ -70,6 +70,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
+        if (GameManager.instance != null && GameManager.instance.isPaused) return;
+
         // 傾きの目標値計算はUpdateで行う（滑らかな補間のため）
         if (isWheelieing)
         {
@@ -86,6 +88,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (GameManager.instance != null && GameManager.instance.isPaused) return;
+
         // 1. 移動処理 (物理エンジンと衝突しないよう Rigidbody.MovePosition を使用)
         Vector3 currentPos = rb.position;
         Vector3 newPosition = currentPos;
@@ -106,6 +110,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void Jump()
     {
+        if (GameManager.instance != null && GameManager.instance.isPaused) return;
+
         // 地面に埋まっている状態での判定抜けを防ぐため、レイの始点をY軸上方向へオフセット
         Vector3 rayOrigin = transform.position + (Vector3.up * rayStartOffset);
 
