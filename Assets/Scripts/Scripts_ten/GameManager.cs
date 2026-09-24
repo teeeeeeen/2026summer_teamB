@@ -46,6 +46,9 @@ public class GameManager : MonoBehaviour
     private bool wasStickNext = false;
     private bool wasStickPrev = false;
     
+    // UIの誤動作（即閉じなど）を防ぐためのフレーム管理用
+    private int ignoreInputFrame = -1;
+
     [Header("オーディオ設定")]
     public AudioSource bgmSource;     // BGM用のAudioSource
     public AudioSource uiAudioSource; // UI操作音（カーソルや決定音）用の専用AudioSource
@@ -115,7 +118,6 @@ public class GameManager : MonoBehaviour
         SetupButton(zukanButton, OpenZukan);
         SetupButton(titleButton, GoToTitle);
         
-        // ゲームオーバー用ボタンのセットアップ
         SetupButton(retryButton, RestartGame);
         SetupButton(gameOverTitleButton, GoToTitle);
     }
@@ -176,11 +178,12 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // ゲームオーバー後の入力処理
         if (!isGameActive)
         {
             if (gameOverUI != null && gameOverUI.activeSelf)
             {
+                // UI切り替え直後のフレームは入力を無視
+                if (Time.frameCount <= ignoreInputFrame + 1) return;
                 HandleGameOverInput();
             }
             return;
@@ -198,13 +201,10 @@ public class GameManager : MonoBehaviour
 
         if (togglePauseInput)
         {
-            if (isZukanOpen)
+            if (Time.frameCount > ignoreInputFrame + 1)
             {
-                CloseZukan();
-            }
-            else
-            {
-                TogglePause();
+                if (isZukanOpen) CloseZukan();
+                else TogglePause();
             }
         }
 
@@ -212,10 +212,14 @@ public class GameManager : MonoBehaviour
         {
             Time.timeScale = 0f; 
 
+            // メニューの開閉を行った直後のフレームは入力を無視する（誤操作による即閉じ防止）
+            if (Time.frameCount <= ignoreInputFrame + 1) return;
+
             if (isZukanOpen)
             {
                 bool cancelZukan = false;
-                if (Gamepad.current != null) cancelZukan |= Gamepad.current.buttonSouth.wasPressedThisFrame || Gamepad.current.buttonEast.wasPressedThisFrame;
+                // プロコンのキャンセル＝Bボタン (South)
+                if (Gamepad.current != null) cancelZukan |= Gamepad.current.buttonSouth.wasPressedThisFrame;
                 if (Keyboard.current != null) cancelZukan |= Keyboard.current.backspaceKey.wasPressedThisFrame; 
                 
                 if (cancelZukan) CloseZukan();
@@ -223,7 +227,8 @@ public class GameManager : MonoBehaviour
             else
             {
                 bool cancelPause = false;
-                if (Gamepad.current != null) cancelPause |= Gamepad.current.buttonSouth.wasPressedThisFrame || Gamepad.current.buttonEast.wasPressedThisFrame;
+                // プロコンのキャンセル＝Bボタン (South)
+                if (Gamepad.current != null) cancelPause |= Gamepad.current.buttonSouth.wasPressedThisFrame;
                 if (Keyboard.current != null) cancelPause |= Keyboard.current.backspaceKey.wasPressedThisFrame;
 
                 if (cancelPause)
@@ -254,9 +259,13 @@ public class GameManager : MonoBehaviour
     public void TogglePause()
     {
         if (!isGameActive || isTransitioning) return;
+        
+        // 連続呼び出し防止
+        if (Time.frameCount <= ignoreInputFrame + 1) return;
 
         PlayDecideSound();
         isPaused = !isPaused;
+        ignoreInputFrame = Time.frameCount;
 
         if (isPaused)
         {
@@ -319,7 +328,8 @@ public class GameManager : MonoBehaviour
             wasStickNext = isStickNext;
             wasStickPrev = isStickPrev;
 
-            submit |= Gamepad.current.buttonEast.wasPressedThisFrame || Gamepad.current.buttonSouth.wasPressedThisFrame;
+            // プロコンの決定＝Aボタン (East)
+            submit |= Gamepad.current.buttonEast.wasPressedThisFrame;
         }
 
         if (moveNext)
@@ -343,11 +353,10 @@ public class GameManager : MonoBehaviour
 
         if (submit && currentPauseButton != null)
         {
-            Button btn = currentPauseButton.GetComponent<Button>();
-            if (btn != null)
-            {
-                btn.onClick.Invoke();
-            }
+            if (currentPauseButton == resumeButton) ResumeGame();
+            else if (currentPauseButton == zukanButton) OpenZukan();
+            else if (currentPauseButton == titleButton) GoToTitle();
+            return;
         }
     }
 
@@ -393,10 +402,10 @@ public class GameManager : MonoBehaviour
             wasStickNext = isStickNext;
             wasStickPrev = isStickPrev;
 
-            submit |= Gamepad.current.buttonEast.wasPressedThisFrame || Gamepad.current.buttonSouth.wasPressedThisFrame;
+            // プロコンの決定＝Aボタン (East)
+            submit |= Gamepad.current.buttonEast.wasPressedThisFrame;
         }
 
-        // リトライとタイトルへ の2択なので、前後どちらの入力でも反転させる
         if (moveNext || movePrev)
         {
             if (currentGameOverButton == retryButton) currentGameOverButton = gameOverTitleButton;
@@ -408,11 +417,9 @@ public class GameManager : MonoBehaviour
 
         if (submit && currentGameOverButton != null)
         {
-            Button btn = currentGameOverButton.GetComponent<Button>();
-            if (btn != null)
-            {
-                btn.onClick.Invoke();
-            }
+            if (currentGameOverButton == retryButton) RestartGame();
+            else if (currentGameOverButton == gameOverTitleButton) GoToTitle();
+            return;
         }
     }
 
@@ -473,24 +480,38 @@ public class GameManager : MonoBehaviour
 
     public void OpenZukan()
     {
-        if (zukanPanel != null)
-        {
-            PlayDecideSound(); 
-            zukanPanel.SetActive(true);
-            if (pauseUI != null) pauseUI.SetActive(false);
-            isZukanOpen = true;
-        }
+        if (isZukanOpen || zukanPanel == null) return;
+
+        PlayDecideSound(); 
+        
+        if (pauseUI != null) pauseUI.SetActive(false);
+        zukanPanel.SetActive(true);
+        isZukanOpen = true;
+        
+        ignoreInputFrame = Time.frameCount;
     }
 
     public void CloseZukan()
     {
-        if (zukanPanel != null)
+        if (!isZukanOpen || zukanPanel == null) return;
+
+        PlayDecideSound(); 
+        zukanPanel.SetActive(false);
+        if (pauseUI != null) pauseUI.SetActive(true);
+        isZukanOpen = false;
+        
+        ignoreInputFrame = Time.frameCount;
+        
+        StartCoroutine(ResetPauseFocus());
+    }
+
+    private IEnumerator ResetPauseFocus()
+    {
+        EventSystem.current.SetSelectedGameObject(null);
+        yield return new WaitForSecondsRealtime(0.05f);
+        
+        if (pauseUI != null && pauseUI.activeSelf)
         {
-            PlayDecideSound(); 
-            zukanPanel.SetActive(false);
-            if (pauseUI != null) pauseUI.SetActive(true);
-            isZukanOpen = false;
-            
             currentPauseButton = zukanButton;
             SelectPauseButton();
         }
@@ -698,8 +719,9 @@ public class GameManager : MonoBehaviour
                 yield return null;
             }
             cg.alpha = 1f; 
+            
+            ignoreInputFrame = Time.frameCount;
 
-            // フェード完了後、初期ボタンを選択状態にする
             currentGameOverButton = retryButton;
             SelectGameOverButton();
         }
@@ -717,7 +739,6 @@ public class GameManager : MonoBehaviour
     {
         if (isTransitioning) return;
         PlayDecideSound();
-        // 現在のシーン名を取得して、フェード付きで再読み込み
         StartCoroutine(FadeAndLoadScene(SceneManager.GetActiveScene().name));
     }
 }
