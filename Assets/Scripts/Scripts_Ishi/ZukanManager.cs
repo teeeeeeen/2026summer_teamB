@@ -20,6 +20,34 @@ public class ZukanManager : MonoBehaviour
     [Header("特殊演出")]
     public Image overlayIconImage;
     private List<ZukanButtonNode> buttonNodes = new List<ZukanButtonNode>();
+    [Header("サウンド設定")]
+    public AudioSource audioSource;
+    public AudioClip selectSE;
+    public AudioClip decideSE;
+    public void PlaySelectSound()
+    {
+        if (audioSource != null && selectSE != null)
+        {
+            audioSource.PlayOneShot(selectSE);
+        }
+    }
+    public void GoToTitleScene()
+    {
+        StartCoroutine(TransitionToTitle());
+    }
+    private IEnumerator TransitionToTitle()
+    {
+        // 決定音を鳴らす
+        if (audioSource != null && decideSE != null)
+        {
+            audioSource.PlayOneShot(decideSE);
+        }
+        
+        // 音が鳴り切るまで待つ
+        yield return new WaitForSecondsRealtime(0.7f); 
+        SceneManager.LoadScene("suika_test"); 
+    }
+
 
     private void Start()
     {
@@ -93,10 +121,6 @@ public class ZukanManager : MonoBehaviour
         EventSystem.current.SetSelectedGameObject(null);
         EventSystem.current.SetSelectedGameObject(targetButton);
     }
-    public void GotoTitleScene()
-    {
-        SceneManager.LoadScene("suika_test");
-    }
 public void UpdateDetailView(MisoSoupData data)
     {
         if (ingredientsText != null) ingredientsText.text = "【材料】\n" + data.ingredients; 
@@ -108,7 +132,6 @@ public void UpdateDetailView(MisoSoupData data)
             iconImage.color = Color.white; 
             descriptionText.text = data.description;
 
-            // ★変更：オーバーレイ画像にも同じ絵をセットし、超最強ならONにする
             if (overlayIconImage != null)
             {
                 overlayIconImage.sprite = data.soupIcon;
@@ -122,7 +145,6 @@ public void UpdateDetailView(MisoSoupData data)
             iconImage.color = Color.black; 
             descriptionText.text = "まだ作っていません...";
 
-            // ★変更：未開放時はオーバーレイを隠す
             if (overlayIconImage != null)
             {
                 overlayIconImage.gameObject.SetActive(false);
