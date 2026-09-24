@@ -3,8 +3,8 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 using System.Collections;
-using System.Collections.Generic; // 【追加】Listを使うために必要
-
+using System.Collections.Generic; 
+using UnityEngine.SceneManagement;
 public class ZukanManager : MonoBehaviour
 {
     [Header("図鑑のデータと生成設定")]
@@ -19,8 +19,6 @@ public class ZukanManager : MonoBehaviour
     public TextMeshProUGUI ingredientsText;
     [Header("特殊演出")]
     public Image overlayIconImage;
-
-    // 【追加】生成したボタンの情報を保持しておくリスト
     private List<ZukanButtonNode> buttonNodes = new List<ZukanButtonNode>();
 
     private void Start()
@@ -28,7 +26,6 @@ public class ZukanManager : MonoBehaviour
         GenerateZukanList();
     }
 
-    // 【追加】図鑑パネルがオン（表示）になるたびに呼ばれる処理
     private void OnEnable()
     {
         RefreshZukanData();
@@ -63,7 +60,7 @@ public class ZukanManager : MonoBehaviour
         }
     }
 
-    // 【追加】すでに生成されているボタンのアンロック状況だけを最新に更新する処理
+    // すでに生成されているボタンのアンロック状況だけを最新に更新する処理
     private void RefreshZukanData()
     {
         // Startが呼ばれる前（ゲーム開始時の初回起動）はスキップする
@@ -96,6 +93,10 @@ public class ZukanManager : MonoBehaviour
         EventSystem.current.SetSelectedGameObject(null);
         EventSystem.current.SetSelectedGameObject(targetButton);
     }
+    public void GotoTitleScene()
+    {
+        SceneManager.LoadScene("suika_test");
+    }
 public void UpdateDetailView(MisoSoupData data)
     {
         if (ingredientsText != null) ingredientsText.text = "【材料】\n" + data.ingredients; 
@@ -119,7 +120,7 @@ public void UpdateDetailView(MisoSoupData data)
             nameText.text = "？？？";
             iconImage.sprite = data.soupIcon;
             iconImage.color = Color.black; 
-            descriptionText.text = "まだ発見していません。";
+            descriptionText.text = "まだ作っていません...";
 
             // ★変更：未開放時はオーバーレイを隠す
             if (overlayIconImage != null)
