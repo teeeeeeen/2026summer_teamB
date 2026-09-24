@@ -3,8 +3,8 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 using System.Collections;
-using System.Collections.Generic; // 【追加】Listを使うために必要
-
+using System.Collections.Generic; 
+using UnityEngine.SceneManagement;
 public class ZukanManager : MonoBehaviour
 {
     [Header("図鑑のデータと生成設定")]
@@ -18,9 +18,7 @@ public class ZukanManager : MonoBehaviour
     public TextMeshProUGUI descriptionText;
     public TextMeshProUGUI ingredientsText;
     [Header("特殊演出")]
-    public GameObject specialEffect;
-
-    // 【追加】生成したボタンの情報を保持しておくリスト
+    public Image overlayIconImage;
     private List<ZukanButtonNode> buttonNodes = new List<ZukanButtonNode>();
 
     private void Start()
@@ -28,7 +26,6 @@ public class ZukanManager : MonoBehaviour
         GenerateZukanList();
     }
 
-    // 【追加】図鑑パネルがオン（表示）になるたびに呼ばれる処理
     private void OnEnable()
     {
         RefreshZukanData();
@@ -63,7 +60,7 @@ public class ZukanManager : MonoBehaviour
         }
     }
 
-    // 【追加】すでに生成されているボタンのアンロック状況だけを最新に更新する処理
+    // すでに生成されているボタンのアンロック状況だけを最新に更新する処理
     private void RefreshZukanData()
     {
         // Startが呼ばれる前（ゲーム開始時の初回起動）はスキップする
@@ -96,13 +93,13 @@ public class ZukanManager : MonoBehaviour
         EventSystem.current.SetSelectedGameObject(null);
         EventSystem.current.SetSelectedGameObject(targetButton);
     }
-
-    public void UpdateDetailView(MisoSoupData data)
+    public void GotoTitleScene()
     {
-        if (ingredientsText != null)
-        {
-            ingredientsText.text = "【材料】\n" + data.ingredients; 
-        }
+        SceneManager.LoadScene("suika_test");
+    }
+public void UpdateDetailView(MisoSoupData data)
+    {
+        if (ingredientsText != null) ingredientsText.text = "【材料】\n" + data.ingredients; 
 
         if (data.isUnlocked)
         {
@@ -111,10 +108,11 @@ public class ZukanManager : MonoBehaviour
             iconImage.color = Color.white; 
             descriptionText.text = data.description;
 
-            // フラグがONならエフェクトを表示、OFFなら隠す
-            if (specialEffect != null)
+            // ★変更：オーバーレイ画像にも同じ絵をセットし、超最強ならONにする
+            if (overlayIconImage != null)
             {
-                specialEffect.SetActive(data.isSuperLegendary);
+                overlayIconImage.sprite = data.soupIcon;
+                overlayIconImage.gameObject.SetActive(data.isSuperLegendary);
             }
         }
         else
@@ -122,12 +120,12 @@ public class ZukanManager : MonoBehaviour
             nameText.text = "？？？";
             iconImage.sprite = data.soupIcon;
             iconImage.color = Color.black; 
-            descriptionText.text = "まだ発見していません。";
+            descriptionText.text = "まだ作っていません...";
 
-            // 未開放の時は光らせない
-            if (specialEffect != null)
+            // ★変更：未開放時はオーバーレイを隠す
+            if (overlayIconImage != null)
             {
-                specialEffect.SetActive(false);
+                overlayIconImage.gameObject.SetActive(false);
             }
         }
     }
