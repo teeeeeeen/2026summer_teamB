@@ -1855,7 +1855,6 @@ MonoBehaviour:
   iconImage: {fileID: 1886637456832186614}
   descriptionText: {fileID: 4390560372350317181}
   ingredientsText: {fileID: 5464197983956809083}
-  specialEffect: {fileID: 0}
   overlayIconImage: {fileID: 880961413}
 --- !u!1 &7010470426066833008
 GameObject:

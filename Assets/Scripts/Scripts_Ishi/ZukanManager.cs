@@ -18,7 +18,6 @@ public class ZukanManager : MonoBehaviour
     public TextMeshProUGUI descriptionText;
     public TextMeshProUGUI ingredientsText;
     [Header("特殊演出")]
-    public GameObject specialEffect;
     public Image overlayIconImage;
 
     // 【追加】生成したボタンの情報を保持しておくリスト
@@ -108,8 +107,6 @@ public void UpdateDetailView(MisoSoupData data)
             iconImage.color = Color.white; 
             descriptionText.text = data.description;
 
-            if (specialEffect != null) specialEffect.SetActive(data.isSuperLegendary);
-
             // ★変更：オーバーレイ画像にも同じ絵をセットし、超最強ならONにする
             if (overlayIconImage != null)
             {
@@ -124,8 +121,6 @@ public void UpdateDetailView(MisoSoupData data)
             iconImage.color = Color.black; 
             descriptionText.text = "まだ発見していません。";
 
-            if (specialEffect != null) specialEffect.SetActive(false);
-            
             // ★変更：未開放時はオーバーレイを隠す
             if (overlayIconImage != null)
             {
