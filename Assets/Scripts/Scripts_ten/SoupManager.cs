@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.UI; // Image用に必要
-using TMPro; // TextMeshProを使うために必要
-using UnityEngine.InputSystem; // 新しい入力システムを使うために必要
+using UnityEngine.UI; 
+using TMPro; 
+using UnityEngine.InputSystem; 
 
 public class SoupManager : MonoBehaviour
 {
@@ -19,6 +19,8 @@ public class SoupManager : MonoBehaviour
 
     [Header("UI設定：完成品演出")]
     public Image finalSoupImage;    
+    [Tooltip("図鑑(ZukanManager)と同様に、虹色に輝かせるための重ねがけ用Image（インスペクターでセットしてください）")]
+    public Image finalSoupOverlayImage;
     [Tooltip("0〜16のIDに対応する17枚のスプライトをセットしてください")]
     public Sprite[] finalSoupSprites; 
     public float showDuration = 3.0f;          // 表示しておく秒数
@@ -27,7 +29,7 @@ public class SoupManager : MonoBehaviour
     public TextMeshProUGUI totalScoreText;     // 合計スコアを表示するTMP
     public TextMeshProUGUI addedScoreText;     // 加算スコア（+3Pなど）を表示するTMP
     
-    // 【変更】外部スクリプト（BackgroundBikeManagerなど）から直接読み取れるように public { get; private set; } に変更
+    // 外部スクリプト（BackgroundBikeManagerなど）から直接読み取れるように public { get; private set; } に変更
     public int totalScore { get; private set; } = 0; 
 
     [Header("リザルト（結果）設定")]
@@ -37,7 +39,10 @@ public class SoupManager : MonoBehaviour
     private List<int> savedHighScores = new List<int>(); // 保存されているハイスコア
 
     [Header("オーディオ設定")]
-    public AudioSource completeSound;          // 味噌汁完成時の効果音
+    public AudioSource audioSource;            // 効果音再生用のAudioSource
+    public AudioClip soundScore10;             // スコア10（失敗など）の時の音
+    public AudioClip soundScore30_50;          // スコア30 or 50（成功）の時の音
+    public AudioClip soundScore100;            // スコア100（超最強）の時の音
 
     public enum Ingredient
     {
@@ -62,6 +67,10 @@ public class SoupManager : MonoBehaviour
         if (finalSoupImage != null)
         {
             finalSoupImage.gameObject.SetActive(false);
+        }
+        if (finalSoupOverlayImage != null)
+        {
+            finalSoupOverlayImage.gameObject.SetActive(false);
         }
         if (displayText != null)
         {
@@ -103,7 +112,7 @@ public class SoupManager : MonoBehaviour
                 Debug.Log("ハイスコアと図鑑データをリセットしました。");
             }
 
-            // 【追加】デバッグ用：F2キーを押すとスコアを+10加算する
+            // デバッグ用：F2キーを押すとスコアを+10加算する
             if (Keyboard.current.f2Key.wasPressedThisFrame)
             {
                 totalScore += 10;
@@ -141,9 +150,15 @@ public class SoupManager : MonoBehaviour
             PlayerPrefs.SetInt("UnlockedSoup_" + resultText, 1);
             PlayerPrefs.Save();
 
-            if (completeSound != null)
+            // 獲得スコアに応じて再生する音を変える
+            if (audioSource != null)
             {
-                completeSound.Play();
+                if (earnedScore == 100 && soundScore100 != null) 
+                    audioSource.PlayOneShot(soundScore100);
+                else if ((earnedScore == 30 || earnedScore == 50) && soundScore30_50 != null) 
+                    audioSource.PlayOneShot(soundScore30_50);
+                else if (soundScore10 != null) 
+                    audioSource.PlayOneShot(soundScore10);
             }
 
             totalScore += earnedScore;
@@ -245,23 +260,23 @@ public class SoupManager : MonoBehaviour
         switch (soupId)
         {
             case 0: return "超最強の味噌汁";
-            case 1: return "湯豆腐";
-            case 2: return "わかめスープ";
-            case 3: return "きつねみそしる";
-            case 4: return "超トロトロなすみそしる";
-            case 5: return "なめこの餡かけみそしる";
-            case 6: return "芋煮";
-            case 7: return "ねぎだく薬味みそしる";
-            case 8: return "和風オニオンスープ";
-            case 9: return "畑の肉みそしる";
-            case 10: return "実家のような安心感のみそしる";
-            case 11: return "ほぼポトフ";
-            case 12: return "Ｗネギみそしる";
-            case 13: return "旨味スポンジみそしる";
-            case 14: return "超ネバトロみそしる";
-            case 15: return "畑の恵み野菜みそしる";
-            case 16: return "具だくさんみそしる";
-            default: return "プログラム壊れちゃった...";
+            case 1: return "湯豆腐";
+            case 2: return "わかめスープ";
+            case 3: return "きつねみそしる";
+            case 4: return "超トロトロ なすみそしる";
+            case 5: return "なめこの餡かけみそしる";
+            case 6: return "芋煮";
+            case 7: return "ねぎだく薬味みそしる";
+            case 8: return "和風オニオンスープ";
+            case 9: return "畑の肉みそしる";
+            case 10: return "実家のような安心感のみそしる";
+            case 11: return "ほぼポトフ";
+            case 12: return "Ｗネギみそしる";
+            case 13: return "旨味スポンジみそしる";
+            case 14: return "超ネバトロみそしる";
+            case 15: return "畑の恵み野菜みそしる";
+            case 16: return "具だくさんみそしる";
+            default: return "プログラム壊れちゃった...";
         }
     }
 
@@ -307,6 +322,16 @@ public class SoupManager : MonoBehaviour
         finalSoupImage.gameObject.SetActive(true);
         finalSoupImage.enabled = true;
         finalSoupImage.transform.localScale = Vector3.one;
+        finalSoupImage.color = Color.white; 
+
+        // オーバーレイ画像の初期化
+        if (finalSoupOverlayImage != null)
+        {
+            finalSoupOverlayImage.sprite = finalSoupSprites[spriteIndex];
+            finalSoupOverlayImage.gameObject.SetActive(soupId == 0); 
+            finalSoupOverlayImage.transform.localScale = Vector3.one;
+            finalSoupOverlayImage.color = Color.white;
+        }
 
         float elapsed = 0f;
         
@@ -315,13 +340,39 @@ public class SoupManager : MonoBehaviour
             elapsed += Time.deltaTime;
             
             float scale = Mathf.Lerp(1.0f, 1.1f, Mathf.PingPong(elapsed, 1.0f));
-            finalSoupImage.transform.localScale = new Vector3(scale, scale, 1f);
-            
+            Vector3 newScale = new Vector3(scale, scale, 1f);
+            finalSoupImage.transform.localScale = newScale;
+
+            // 超最強(ID=0)の場合は色を時間で変化させて虹色にする
+            if (soupId == 0)
+            {
+                float hue = Mathf.Repeat(elapsed * 2f, 1f); 
+                Color rainbowColor = Color.HSVToRGB(hue, 0.7f, 1f); 
+
+                if (finalSoupOverlayImage != null && finalSoupOverlayImage.gameObject.activeSelf)
+                {
+                    finalSoupOverlayImage.transform.localScale = newScale;
+                    finalSoupOverlayImage.color = rainbowColor;
+                }
+                else
+                {
+                    // もしオーバーレイ画像が未セットなら本体を直接輝かせる
+                    finalSoupImage.color = rainbowColor;
+                }
+            }
+
             yield return null;
         }
 
         finalSoupImage.transform.localScale = Vector3.one;
+        finalSoupImage.color = Color.white; 
         finalSoupImage.gameObject.SetActive(false);
+
+        if (finalSoupOverlayImage != null)
+        {
+            finalSoupOverlayImage.color = Color.white;
+            finalSoupOverlayImage.gameObject.SetActive(false);
+        }
     }
 
     private void UpdateResultUI()
