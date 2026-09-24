@@ -46,9 +46,6 @@ public class GameManager : MonoBehaviour
     private bool wasStickNext = false;
     private bool wasStickPrev = false;
     
-    // UIの誤動作（即閉じなど）を防ぐためのフレーム管理用
-    private int ignoreInputFrame = -1;
-
     [Header("オーディオ設定")]
     public AudioSource bgmSource;     // BGM用のAudioSource
     public AudioSource uiAudioSource; // UI操作音（カーソルや決定音）用の専用AudioSource
@@ -201,10 +198,13 @@ public class GameManager : MonoBehaviour
 
         if (togglePauseInput)
         {
-            if (Time.frameCount > ignoreInputFrame + 1)
+            if (isZukanOpen)
             {
-                if (isZukanOpen) CloseZukan();
-                else TogglePause();
+                CloseZukan();
+            }
+            else
+            {
+                TogglePause();
             }
         }
 
@@ -254,13 +254,9 @@ public class GameManager : MonoBehaviour
     public void TogglePause()
     {
         if (!isGameActive || isTransitioning) return;
-        
-        // 連続呼び出し防止
-        if (Time.frameCount <= ignoreInputFrame + 1) return;
 
         PlayDecideSound();
         isPaused = !isPaused;
-        ignoreInputFrame = Time.frameCount;
 
         if (isPaused)
         {
@@ -347,73 +343,11 @@ public class GameManager : MonoBehaviour
 
         if (submit && currentPauseButton != null)
         {
-            if (currentPauseButton == resumeButton) ResumeGame();
-            else if (currentPauseButton == zukanButton) OpenZukan();
-            else if (currentPauseButton == titleButton) GoToTitle();
-            return;
-        }
-    }
-
-    private void HandleGameOverInput()
-    {
-        GameObject selectedObj = EventSystem.current.currentSelectedGameObject;
-        if (selectedObj != null && selectedObj != currentGameOverButton)
-        {
-            if (selectedObj == retryButton || selectedObj == gameOverTitleButton)
+            Button btn = currentPauseButton.GetComponent<Button>();
+            if (btn != null)
             {
-                currentGameOverButton = selectedObj;
-                UpdateArrowPosition(currentGameOverButton);
+                btn.onClick.Invoke();
             }
-        }
-        else if (selectedObj == null && currentGameOverButton != null)
-        {
-            EventSystem.current.SetSelectedGameObject(currentGameOverButton);
-        }
-
-        bool moveNext = false; 
-        bool movePrev = false; 
-        bool submit = false;   
-
-        if (Keyboard.current != null)
-        {
-            moveNext |= Keyboard.current.dKey.wasPressedThisFrame || Keyboard.current.rightArrowKey.wasPressedThisFrame || Keyboard.current.sKey.wasPressedThisFrame || Keyboard.current.downArrowKey.wasPressedThisFrame;
-            movePrev |= Keyboard.current.aKey.wasPressedThisFrame || Keyboard.current.leftArrowKey.wasPressedThisFrame || Keyboard.current.wKey.wasPressedThisFrame || Keyboard.current.upArrowKey.wasPressedThisFrame;
-            submit |= Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame;
-        }
-
-        if (Gamepad.current != null)
-        {
-            moveNext |= Gamepad.current.dpad.right.wasPressedThisFrame || Gamepad.current.dpad.down.wasPressedThisFrame;
-            movePrev |= Gamepad.current.dpad.left.wasPressedThisFrame || Gamepad.current.dpad.up.wasPressedThisFrame;
-
-            Vector2 stick = Gamepad.current.leftStick.ReadValue();
-            bool isStickNext = stick.x > 0.5f || stick.y < -0.5f;
-            bool isStickPrev = stick.x < -0.5f || stick.y > 0.5f;
-
-            if (isStickNext && !wasStickNext) moveNext = true;
-            if (isStickPrev && !wasStickPrev) movePrev = true;
-
-            wasStickNext = isStickNext;
-            wasStickPrev = isStickPrev;
-
-            // プロコンの決定＝Aボタン (East)
-            submit |= Gamepad.current.buttonEast.wasPressedThisFrame;
-        }
-
-        if (moveNext || movePrev)
-        {
-            if (currentGameOverButton == retryButton) currentGameOverButton = gameOverTitleButton;
-            else currentGameOverButton = retryButton;
-
-            PlaySelectSound();
-            SelectGameOverButton();
-        }
-
-        if (submit && currentGameOverButton != null)
-        {
-            if (currentGameOverButton == retryButton) RestartGame();
-            else if (currentGameOverButton == gameOverTitleButton) GoToTitle();
-            return;
         }
     }
 
@@ -539,38 +473,24 @@ public class GameManager : MonoBehaviour
 
     public void OpenZukan()
     {
-        if (isZukanOpen || zukanPanel == null) return;
-
-        PlayDecideSound(); 
-        
-        if (pauseUI != null) pauseUI.SetActive(false);
-        zukanPanel.SetActive(true);
-        isZukanOpen = true;
-        
-        ignoreInputFrame = Time.frameCount;
+        if (zukanPanel != null)
+        {
+            PlayDecideSound(); 
+            zukanPanel.SetActive(true);
+            if (pauseUI != null) pauseUI.SetActive(false);
+            isZukanOpen = true;
+        }
     }
 
     public void CloseZukan()
     {
-        if (!isZukanOpen || zukanPanel == null) return;
-
-        PlayDecideSound(); 
-        zukanPanel.SetActive(false);
-        if (pauseUI != null) pauseUI.SetActive(true);
-        isZukanOpen = false;
-        
-        ignoreInputFrame = Time.frameCount;
-        
-        StartCoroutine(ResetPauseFocus());
-    }
-
-    private IEnumerator ResetPauseFocus()
-    {
-        EventSystem.current.SetSelectedGameObject(null);
-        yield return new WaitForSecondsRealtime(0.05f);
-        
-        if (pauseUI != null && pauseUI.activeSelf)
+        if (zukanPanel != null)
         {
+            PlayDecideSound(); 
+            zukanPanel.SetActive(false);
+            if (pauseUI != null) pauseUI.SetActive(true);
+            isZukanOpen = false;
+            
             currentPauseButton = zukanButton;
             SelectPauseButton();
         }
