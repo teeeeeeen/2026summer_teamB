@@ -26,7 +26,9 @@ public class SoupManager : MonoBehaviour
     [Header("スコア設定")]
     public TextMeshProUGUI totalScoreText;     // 合計スコアを表示するTMP
     public TextMeshProUGUI addedScoreText;     // 加算スコア（+3Pなど）を表示するTMP
-    private int totalScore = 0;                // 現在の合計スコア
+    
+    // 【変更】外部スクリプト（BackgroundBikeManagerなど）から直接読み取れるように public { get; private set; } に変更
+    public int totalScore { get; private set; } = 0; 
 
     [Header("リザルト（結果）設定")]
     public TextMeshProUGUI resultCurrentScoreText;    // ゲームオーバー画面等で「今回のスコア」を表示するTMP
@@ -84,7 +86,6 @@ public class SoupManager : MonoBehaviour
 
     void Update()
     {
-        // 新しいInput Systemに対応したキー判定
         if (Keyboard.current != null)
         {
             bool isCtrl = Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed;
@@ -101,10 +102,18 @@ public class SoupManager : MonoBehaviour
                 UpdateResultUI();
                 Debug.Log("ハイスコアと図鑑データをリセットしました。");
             }
+
+            // 【追加】デバッグ用：F2キーを押すとスコアを+10加算する
+            if (Keyboard.current.f2Key.wasPressedThisFrame)
+            {
+                totalScore += 10;
+                if (totalScoreText != null) totalScoreText.text = $"SCORE: {totalScore}";
+                UpdateResultUI();
+                Debug.Log($"[Debug] スコアを+10加算しました。現在のスコア: {totalScore}");
+            }
         }
     }
 
-    // 障害物から呼ばれる処理
     public void CatchIngredient(string ingredientName, Sprite ingredientSprite)
     {
         Ingredient ing = GetIngredientFromName(ingredientName);
@@ -114,7 +123,6 @@ public class SoupManager : MonoBehaviour
             return;
         }
 
-        // アイコンを灯す
         if (currentCount < ingredientIcons.Length && ingredientIcons[currentCount] != null)
         {
             ingredientIcons[currentCount].sprite = ingredientSprite;
@@ -124,43 +132,34 @@ public class SoupManager : MonoBehaviour
         currentIngredients.Add(ing);
         currentCount++;
 
-        // 8個集まった時の処理
         if (currentCount >= 8)
         {
             int soupId = EvaluateSoupId(currentIngredients);
             string resultText = GetSoupText(soupId);
             int earnedScore = GetSoupScore(soupId);
 
-            // 【追加】図鑑用に完成した味噌汁を名前ベースでPlayerPrefsに保存
             PlayerPrefs.SetInt("UnlockedSoup_" + resultText, 1);
             PlayerPrefs.Save();
 
-            // 効果音を鳴らす
             if (completeSound != null)
             {
                 completeSound.Play();
             }
 
-            // スコア加算
             totalScore += earnedScore;
             if (totalScoreText != null) totalScoreText.text = $"SCORE: {totalScore}";
 
-            // 加算スコア（+〇P）の表示アニメーション
             if (currentAddedScoreRoutine != null) StopCoroutine(currentAddedScoreRoutine);
             currentAddedScoreRoutine = StartCoroutine(ShowAddedScoreRoutine(earnedScore));
 
-            // リザルト画面をいつでも表示できるよう最新状態に更新
             UpdateResultUI();
 
-            // テキスト流し開始
             if (currentTextRoutine != null) StopCoroutine(currentTextRoutine);
             currentTextRoutine = StartCoroutine(StreamText(resultText));
 
-            // 画像アニメーション開始
             if (currentAnimationRoutine != null) StopCoroutine(currentAnimationRoutine);
             currentAnimationRoutine = StartCoroutine(ShowFinalSoupRoutine(soupId));
 
-            // 次の収集ができるように即座にリセット
             ResetIcons();
         }
     }
@@ -206,7 +205,7 @@ public class SoupManager : MonoBehaviour
 
         int uniqueCount = counts.Count(kv => kv.Value > 0);
 
-        if (uniqueCount == 8) return 0; // 具材の重複がない
+        if (uniqueCount == 8) return 0; 
 
         if (uniqueCount == 1)
         {
@@ -266,16 +265,14 @@ public class SoupManager : MonoBehaviour
         }
     }
 
-    // スコアの配点を算出する処理
     private int GetSoupScore(int soupId)
     {
-        if (soupId == 0) return 4;                    // 超最強の味噌汁
-        if (soupId >= 1 && soupId <= 8) return 3;     // 同じ具材8個
-        if (soupId >= 9 && soupId <= 15) return 2;    // 特定の組み合わせ
-        return 1;                                     // 具だくさん（16）
+        if (soupId == 0) return 100;                   
+        if (soupId >= 1 && soupId <= 8) return 50;     
+        if (soupId >= 9 && soupId <= 15) return 30;    
+        return 10;                                     
     }
 
-    // 加算スコアを表示して消すコルーチン
     private IEnumerator ShowAddedScoreRoutine(int score)
     {
         if (addedScoreText == null) yield break;
@@ -283,12 +280,11 @@ public class SoupManager : MonoBehaviour
         addedScoreText.text = $"+{score}P";
         addedScoreText.gameObject.SetActive(true);
 
-        yield return new WaitForSeconds(1.5f); // 1.5秒間表示
+        yield return new WaitForSeconds(1.5f); 
 
         addedScoreText.gameObject.SetActive(false);
     }
 
-    // 完成品の名前を流すコルーチン
     private IEnumerator StreamText(string text)
     {
         if (displayText == null) yield break;
@@ -301,7 +297,6 @@ public class SoupManager : MonoBehaviour
         }
     }
 
-    // 完成品を拡縮アニメーションさせるコルーチン
     private IEnumerator ShowFinalSoupRoutine(int soupId)
     {
         if (finalSoupImage == null || finalSoupSprites == null || finalSoupSprites.Length == 0) yield break;
@@ -319,7 +314,6 @@ public class SoupManager : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             
-            // 0 -> 1 -> 0 を1秒ごとに繰り返して拡縮
             float scale = Mathf.Lerp(1.0f, 1.1f, Mathf.PingPong(elapsed, 1.0f));
             finalSoupImage.transform.localScale = new Vector3(scale, scale, 1f);
             
@@ -330,10 +324,8 @@ public class SoupManager : MonoBehaviour
         finalSoupImage.gameObject.SetActive(false);
     }
 
-    // 今回のスコアを含めたハイスコアボードを更新する処理
     private void UpdateResultUI()
     {
-        // 今回のスコアをリストに加えてソート（降順）
         List<int> displayScores = new List<int>(savedHighScores);
         displayScores.Add(totalScore);
         displayScores.Sort((a, b) => b.CompareTo(a));
@@ -355,7 +347,6 @@ public class SoupManager : MonoBehaviour
         }
     }
 
-    // シーン遷移時（もう一度遊ぶ）やゲーム終了時に現在のスコアを含めて保存する
     void OnDestroy()
     {
         savedHighScores.Add(totalScore);

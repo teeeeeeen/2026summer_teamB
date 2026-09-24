@@ -32,9 +32,9 @@ public class GameManager : MonoBehaviour
     private GameObject currentPauseButton; // 現在選択されているボタン
 
     [Header("シーン遷移・フェード設定")]
-    public RawImage fadeMask;           // 【追加】画面全体を覆う黒いRawImage
-    public float fadeDuration = 1.0f;   // 【追加】フェードにかかる時間（秒）
-    public float transitionDelay = 2.0f;// 【追加】完全にフェードインした後に待機する時間（秒）
+    public RawImage fadeMask;           // 画面全体を覆う黒いRawImage
+    public float fadeDuration = 1.0f;   // フェードにかかる時間（秒）
+    public float transitionDelay = 2.0f;// 完全にフェードインした後に待機する時間（秒）
     private bool isTransitioning = false; // 遷移中かどうかのフラグ
 
     // スティックの入力状態保持用
@@ -91,10 +91,9 @@ public class GameManager : MonoBehaviour
         if (zukanPanel != null) zukanPanel.SetActive(false); 
         if (arrow != null) arrow.SetActive(false);
         
-        // フェード用のマスクを初期化して非表示にする
         if (fadeMask != null)
         {
-            fadeMask.gameObject.SetActive(false);
+            StartCoroutine(FadeInRoutine());
         }
 
         if (playerObject != null)
@@ -129,10 +128,48 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private IEnumerator FadeInRoutine()
+    {
+        isTransitioning = true; 
+        Time.timeScale = 0f; // 【修正】フェードイン中は完全に時間を止めて、裏で敵が動くのを防ぐ
+        
+        fadeMask.gameObject.SetActive(true);
+        Color color = fadeMask.color;
+        color.a = 1f; 
+        fadeMask.color = color;
+
+        float time = 0f;
+        while (time < fadeDuration)
+        {
+            time += Time.unscaledDeltaTime;
+            color.a = Mathf.Lerp(1f, 0f, time / fadeDuration);
+            fadeMask.color = color;
+            yield return null;
+        }
+        
+        color.a = 0f;
+        fadeMask.color = color;
+        fadeMask.gameObject.SetActive(false);
+        
+        isTransitioning = false; 
+        
+        // ポーズ中でなければ時間を再開
+        if (!isPaused) 
+        {
+            Time.timeScale = 1f;
+        }
+    }
+
     void Update()
     {
-        // 遷移中、またはゲームがアクティブでない場合は入力を一切受け付けない
-        if (!isGameActive || isTransitioning) return;
+        if (!isGameActive) return;
+
+        // 遷移中（フェードイン・アウト中）は入力を一切受け付けず、念のため時間も止めておく
+        if (isTransitioning) 
+        {
+            Time.timeScale = 0f;
+            return;
+        }
 
         bool isEscape = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
         bool isNumpadPlus = Keyboard.current != null && Keyboard.current.numpadPlusKey.wasPressedThisFrame;
@@ -158,9 +195,10 @@ public class GameManager : MonoBehaviour
 
         if (isPaused)
         {
+            Time.timeScale = 0f; // 【修正】ポーズ中は強制的に時間を止める（他の要因での時間進行を完全にシャットアウト）
+
             if (isZukanOpen)
             {
-                // 図鑑中のキャンセル操作
                 bool cancelZukan = false;
                 if (Gamepad.current != null) cancelZukan |= Gamepad.current.buttonSouth.wasPressedThisFrame;
                 if (Keyboard.current != null) cancelZukan |= Keyboard.current.backspaceKey.wasPressedThisFrame; 
@@ -169,7 +207,6 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                // 【追加】ポーズメイン画面でのキャンセル操作（ゲーム再開）
                 bool cancelPause = false;
                 if (Gamepad.current != null) cancelPause |= Gamepad.current.buttonSouth.wasPressedThisFrame;
                 if (Keyboard.current != null) cancelPause |= Keyboard.current.backspaceKey.wasPressedThisFrame;
@@ -187,6 +224,8 @@ public class GameManager : MonoBehaviour
         }
         else
         {
+            Time.timeScale = 1f; // 【修正】通常時は確実に時間を進める
+
             elapsedTime += Time.deltaTime;
             currentSpeedMultiplier = 1f + (elapsedTime / timeToDoubleSpeed);
 
@@ -199,6 +238,9 @@ public class GameManager : MonoBehaviour
 
     public void TogglePause()
     {
+        // 【追加】遷移中（フェードイン中など）はUIボタンから呼ばれても強制ブロックする
+        if (!isGameActive || isTransitioning) return;
+
         PlayDecideSound();
         isPaused = !isPaused;
 
@@ -367,7 +409,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // 【変更】コルーチンを呼び出してフェード遷移を開始する
     public void GoToTitle()
     {
         if (isTransitioning) return;
@@ -375,10 +416,10 @@ public class GameManager : MonoBehaviour
         StartCoroutine(FadeAndLoadScene(titleSceneName));
     }
 
-    // 【追加】RawImageを使ったフェードイン＆待機コルーチン
     private IEnumerator FadeAndLoadScene(string sceneName)
     {
         isTransitioning = true;
+        Time.timeScale = 0f; // 【修正】フェードアウト中も時間を完全に止める
         
         if (fadeMask != null)
         {
@@ -390,7 +431,6 @@ public class GameManager : MonoBehaviour
             float time = 0f;
             while (time < fadeDuration)
             {
-                // ポーズ中（timeScale = 0）でも時間が進むように unscaledDeltaTime を使用
                 time += Time.unscaledDeltaTime; 
                 color.a = Mathf.Lerp(0f, 1f, time / fadeDuration);
                 fadeMask.color = color;
@@ -400,12 +440,11 @@ public class GameManager : MonoBehaviour
             color.a = 1f;
             fadeMask.color = color;
             
-            // 完全にフェードインした後、指定秒数だけ現実時間で待機
             yield return new WaitForSecondsRealtime(transitionDelay);
         }
 
         Time.timeScale = 1f;
-        AudioListener.pause = false; // シーン遷移時に必ず音の停止状態を解除する
+        AudioListener.pause = false; 
         SceneManager.LoadScene(sceneName);
     }
 
