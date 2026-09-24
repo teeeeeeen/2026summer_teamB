@@ -31,6 +31,11 @@ public class GameManager : MonoBehaviour
     public GameObject arrow;        // 選択中を示す矢印オブジェクト
     private GameObject currentPauseButton; // 現在選択されているボタン
 
+    [Header("ゲームオーバー画面のボタン設定")]
+    public GameObject retryButton;         // 「リトライ」ボタン
+    public GameObject gameOverTitleButton; // 「タイトルへ」ボタン
+    private GameObject currentGameOverButton; // 現在選択されているゲームオーバー用ボタン
+
     [Header("シーン遷移・フェード設定")]
     public RawImage fadeMask;           // 画面全体を覆う黒いRawImage
     public float fadeDuration = 1.0f;   // フェードにかかる時間（秒）
@@ -109,6 +114,10 @@ public class GameManager : MonoBehaviour
         SetupButton(resumeButton, ResumeGame);
         SetupButton(zukanButton, OpenZukan);
         SetupButton(titleButton, GoToTitle);
+        
+        // ゲームオーバー用ボタンのセットアップ
+        SetupButton(retryButton, RestartGame);
+        SetupButton(gameOverTitleButton, GoToTitle);
     }
 
     private void SetupButton(GameObject btnObj, UnityEngine.Events.UnityAction action)
@@ -131,7 +140,7 @@ public class GameManager : MonoBehaviour
     private IEnumerator FadeInRoutine()
     {
         isTransitioning = true; 
-        Time.timeScale = 0f; // 【修正】フェードイン中は完全に時間を止めて、裏で敵が動くのを防ぐ
+        Time.timeScale = 0f; 
         
         fadeMask.gameObject.SetActive(true);
         Color color = fadeMask.color;
@@ -153,7 +162,6 @@ public class GameManager : MonoBehaviour
         
         isTransitioning = false; 
         
-        // ポーズ中でなければ時間を再開
         if (!isPaused) 
         {
             Time.timeScale = 1f;
@@ -162,12 +170,19 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        if (!isGameActive) return;
-
-        // 遷移中（フェードイン・アウト中）は入力を一切受け付けず、念のため時間も止めておく
         if (isTransitioning) 
         {
             Time.timeScale = 0f;
+            return;
+        }
+
+        // ゲームオーバー後の入力処理
+        if (!isGameActive)
+        {
+            if (gameOverUI != null && gameOverUI.activeSelf)
+            {
+                HandleGameOverInput();
+            }
             return;
         }
 
@@ -195,12 +210,12 @@ public class GameManager : MonoBehaviour
 
         if (isPaused)
         {
-            Time.timeScale = 0f; // 【修正】ポーズ中は強制的に時間を止める（他の要因での時間進行を完全にシャットアウト）
+            Time.timeScale = 0f; 
 
             if (isZukanOpen)
             {
                 bool cancelZukan = false;
-                if (Gamepad.current != null) cancelZukan |= Gamepad.current.buttonSouth.wasPressedThisFrame;
+                if (Gamepad.current != null) cancelZukan |= Gamepad.current.buttonSouth.wasPressedThisFrame || Gamepad.current.buttonEast.wasPressedThisFrame;
                 if (Keyboard.current != null) cancelZukan |= Keyboard.current.backspaceKey.wasPressedThisFrame; 
                 
                 if (cancelZukan) CloseZukan();
@@ -208,7 +223,7 @@ public class GameManager : MonoBehaviour
             else
             {
                 bool cancelPause = false;
-                if (Gamepad.current != null) cancelPause |= Gamepad.current.buttonSouth.wasPressedThisFrame;
+                if (Gamepad.current != null) cancelPause |= Gamepad.current.buttonSouth.wasPressedThisFrame || Gamepad.current.buttonEast.wasPressedThisFrame;
                 if (Keyboard.current != null) cancelPause |= Keyboard.current.backspaceKey.wasPressedThisFrame;
 
                 if (cancelPause)
@@ -224,7 +239,7 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            Time.timeScale = 1f; // 【修正】通常時は確実に時間を進める
+            Time.timeScale = 1f; 
 
             elapsedTime += Time.deltaTime;
             currentSpeedMultiplier = 1f + (elapsedTime / timeToDoubleSpeed);
@@ -238,7 +253,6 @@ public class GameManager : MonoBehaviour
 
     public void TogglePause()
     {
-        // 【追加】遷移中（フェードイン中など）はUIボタンから呼ばれても強制ブロックする
         if (!isGameActive || isTransitioning) return;
 
         PlayDecideSound();
@@ -271,7 +285,7 @@ public class GameManager : MonoBehaviour
             if (selectedObj == resumeButton || selectedObj == zukanButton || selectedObj == titleButton)
             {
                 currentPauseButton = selectedObj;
-                UpdateArrowPosition();
+                UpdateArrowPosition(currentPauseButton);
             }
         }
         else if (selectedObj == null && currentPauseButton != null)
@@ -285,19 +299,19 @@ public class GameManager : MonoBehaviour
 
         if (Keyboard.current != null)
         {
-            moveNext |= Keyboard.current.dKey.wasPressedThisFrame || Keyboard.current.rightArrowKey.wasPressedThisFrame;
-            movePrev |= Keyboard.current.aKey.wasPressedThisFrame || Keyboard.current.leftArrowKey.wasPressedThisFrame;
+            moveNext |= Keyboard.current.dKey.wasPressedThisFrame || Keyboard.current.rightArrowKey.wasPressedThisFrame || Keyboard.current.sKey.wasPressedThisFrame || Keyboard.current.downArrowKey.wasPressedThisFrame;
+            movePrev |= Keyboard.current.aKey.wasPressedThisFrame || Keyboard.current.leftArrowKey.wasPressedThisFrame || Keyboard.current.wKey.wasPressedThisFrame || Keyboard.current.upArrowKey.wasPressedThisFrame;
             submit |= Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame;
         }
 
         if (Gamepad.current != null)
         {
-            moveNext |= Gamepad.current.dpad.right.wasPressedThisFrame;
-            movePrev |= Gamepad.current.dpad.left.wasPressedThisFrame;
+            moveNext |= Gamepad.current.dpad.right.wasPressedThisFrame || Gamepad.current.dpad.down.wasPressedThisFrame;
+            movePrev |= Gamepad.current.dpad.left.wasPressedThisFrame || Gamepad.current.dpad.up.wasPressedThisFrame;
 
             Vector2 stick = Gamepad.current.leftStick.ReadValue();
-            bool isStickNext = stick.x > 0.5f;
-            bool isStickPrev = stick.x < -0.5f;
+            bool isStickNext = stick.x > 0.5f || stick.y < -0.5f;
+            bool isStickPrev = stick.x < -0.5f || stick.y > 0.5f;
 
             if (isStickNext && !wasStickNext) moveNext = true;
             if (isStickPrev && !wasStickPrev) movePrev = true;
@@ -305,7 +319,7 @@ public class GameManager : MonoBehaviour
             wasStickNext = isStickNext;
             wasStickPrev = isStickPrev;
 
-            submit |= Gamepad.current.buttonEast.wasPressedThisFrame;
+            submit |= Gamepad.current.buttonEast.wasPressedThisFrame || Gamepad.current.buttonSouth.wasPressedThisFrame;
         }
 
         if (moveNext)
@@ -337,20 +351,93 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void HandleGameOverInput()
+    {
+        GameObject selectedObj = EventSystem.current.currentSelectedGameObject;
+        if (selectedObj != null && selectedObj != currentGameOverButton)
+        {
+            if (selectedObj == retryButton || selectedObj == gameOverTitleButton)
+            {
+                currentGameOverButton = selectedObj;
+                UpdateArrowPosition(currentGameOverButton);
+            }
+        }
+        else if (selectedObj == null && currentGameOverButton != null)
+        {
+            EventSystem.current.SetSelectedGameObject(currentGameOverButton);
+        }
+
+        bool moveNext = false; 
+        bool movePrev = false; 
+        bool submit = false;   
+
+        if (Keyboard.current != null)
+        {
+            moveNext |= Keyboard.current.dKey.wasPressedThisFrame || Keyboard.current.rightArrowKey.wasPressedThisFrame || Keyboard.current.sKey.wasPressedThisFrame || Keyboard.current.downArrowKey.wasPressedThisFrame;
+            movePrev |= Keyboard.current.aKey.wasPressedThisFrame || Keyboard.current.leftArrowKey.wasPressedThisFrame || Keyboard.current.wKey.wasPressedThisFrame || Keyboard.current.upArrowKey.wasPressedThisFrame;
+            submit |= Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame;
+        }
+
+        if (Gamepad.current != null)
+        {
+            moveNext |= Gamepad.current.dpad.right.wasPressedThisFrame || Gamepad.current.dpad.down.wasPressedThisFrame;
+            movePrev |= Gamepad.current.dpad.left.wasPressedThisFrame || Gamepad.current.dpad.up.wasPressedThisFrame;
+
+            Vector2 stick = Gamepad.current.leftStick.ReadValue();
+            bool isStickNext = stick.x > 0.5f || stick.y < -0.5f;
+            bool isStickPrev = stick.x < -0.5f || stick.y > 0.5f;
+
+            if (isStickNext && !wasStickNext) moveNext = true;
+            if (isStickPrev && !wasStickPrev) movePrev = true;
+
+            wasStickNext = isStickNext;
+            wasStickPrev = isStickPrev;
+
+            submit |= Gamepad.current.buttonEast.wasPressedThisFrame || Gamepad.current.buttonSouth.wasPressedThisFrame;
+        }
+
+        // リトライとタイトルへ の2択なので、前後どちらの入力でも反転させる
+        if (moveNext || movePrev)
+        {
+            if (currentGameOverButton == retryButton) currentGameOverButton = gameOverTitleButton;
+            else currentGameOverButton = retryButton;
+
+            PlaySelectSound();
+            SelectGameOverButton();
+        }
+
+        if (submit && currentGameOverButton != null)
+        {
+            Button btn = currentGameOverButton.GetComponent<Button>();
+            if (btn != null)
+            {
+                btn.onClick.Invoke();
+            }
+        }
+    }
+
     private void SelectPauseButton()
     {
         if (currentPauseButton == null) return;
         EventSystem.current.SetSelectedGameObject(null);
         EventSystem.current.SetSelectedGameObject(currentPauseButton);
-        UpdateArrowPosition();
+        UpdateArrowPosition(currentPauseButton);
     }
 
-    private void UpdateArrowPosition()
+    private void SelectGameOverButton()
     {
-        if (arrow != null && currentPauseButton != null)
+        if (currentGameOverButton == null) return;
+        EventSystem.current.SetSelectedGameObject(null);
+        EventSystem.current.SetSelectedGameObject(currentGameOverButton);
+        UpdateArrowPosition(currentGameOverButton);
+    }
+
+    private void UpdateArrowPosition(GameObject targetButton)
+    {
+        if (arrow != null && targetButton != null)
         {
             arrow.SetActive(true);
-            arrow.transform.SetParent(currentPauseButton.transform, false);
+            arrow.transform.SetParent(targetButton.transform, false);
             
             RectTransform arrowRect = arrow.GetComponent<RectTransform>();
             if (arrowRect != null)
@@ -419,7 +506,7 @@ public class GameManager : MonoBehaviour
     private IEnumerator FadeAndLoadScene(string sceneName)
     {
         isTransitioning = true;
-        Time.timeScale = 0f; // 【修正】フェードアウト中も時間を完全に止める
+        Time.timeScale = 0f; 
         
         if (fadeMask != null)
         {
@@ -611,6 +698,10 @@ public class GameManager : MonoBehaviour
                 yield return null;
             }
             cg.alpha = 1f; 
+
+            // フェード完了後、初期ボタンを選択状態にする
+            currentGameOverButton = retryButton;
+            SelectGameOverButton();
         }
     }
 
@@ -624,8 +715,9 @@ public class GameManager : MonoBehaviour
 
     public void RestartGame()
     {
-        Time.timeScale = 1f;
-        AudioListener.pause = false; 
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        if (isTransitioning) return;
+        PlayDecideSound();
+        // 現在のシーン名を取得して、フェード付きで再読み込み
+        StartCoroutine(FadeAndLoadScene(SceneManager.GetActiveScene().name));
     }
 }

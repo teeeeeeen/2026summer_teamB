@@ -97,12 +97,31 @@ public class PrologueManager : MonoBehaviour
         // フェード完了前（開始時）、または終了処理中は入力を受け付けない
         if (isFinished || !isInputEnabled) return; 
 
+        // ページ送りの入力判定（クリック、Space、Enterキー）
         bool isClicked = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
-        bool isEnterPressed = Keyboard.current != null && (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame);
+        bool isKeyboardNext = Keyboard.current != null && (
+            Keyboard.current.enterKey.wasPressedThisFrame || 
+            Keyboard.current.numpadEnterKey.wasPressedThisFrame ||
+            Keyboard.current.spaceKey.wasPressedThisFrame);
+        
+        // ページ送りの入力判定（コントローラーのA/Bボタン。機種による配置違いをカバーするために両方判定）
+        bool isGamepadNext = Gamepad.current != null && (
+            Gamepad.current.buttonSouth.wasPressedThisFrame || 
+            Gamepad.current.buttonEast.wasPressedThisFrame);
 
-        if (isClicked || isEnterPressed)
+        if (isClicked || isKeyboardNext || isGamepadNext)
         {
             HandleInput();
+        }
+
+        // スキップの入力判定（コントローラーの+/-ボタン。Start=+/Menu, Select=-/Viewに該当）
+        bool isGamepadSkip = Gamepad.current != null && (
+            Gamepad.current.startButton.wasPressedThisFrame || 
+            Gamepad.current.selectButton.wasPressedThisFrame);
+
+        if (isGamepadSkip)
+        {
+            Skip();
         }
     }
 
