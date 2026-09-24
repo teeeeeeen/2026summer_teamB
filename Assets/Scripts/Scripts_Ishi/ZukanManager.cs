@@ -19,6 +19,7 @@ public class ZukanManager : MonoBehaviour
     public TextMeshProUGUI ingredientsText;
     [Header("特殊演出")]
     public GameObject specialEffect;
+    public Image overlayIconImage;
 
     // 【追加】生成したボタンの情報を保持しておくリスト
     private List<ZukanButtonNode> buttonNodes = new List<ZukanButtonNode>();
@@ -96,13 +97,9 @@ public class ZukanManager : MonoBehaviour
         EventSystem.current.SetSelectedGameObject(null);
         EventSystem.current.SetSelectedGameObject(targetButton);
     }
-
-    public void UpdateDetailView(MisoSoupData data)
+public void UpdateDetailView(MisoSoupData data)
     {
-        if (ingredientsText != null)
-        {
-            ingredientsText.text = "【材料】\n" + data.ingredients; 
-        }
+        if (ingredientsText != null) ingredientsText.text = "【材料】\n" + data.ingredients; 
 
         if (data.isUnlocked)
         {
@@ -111,10 +108,13 @@ public class ZukanManager : MonoBehaviour
             iconImage.color = Color.white; 
             descriptionText.text = data.description;
 
-            // フラグがONならエフェクトを表示、OFFなら隠す
-            if (specialEffect != null)
+            if (specialEffect != null) specialEffect.SetActive(data.isSuperLegendary);
+
+            // ★変更：オーバーレイ画像にも同じ絵をセットし、超最強ならONにする
+            if (overlayIconImage != null)
             {
-                specialEffect.SetActive(data.isSuperLegendary);
+                overlayIconImage.sprite = data.soupIcon;
+                overlayIconImage.gameObject.SetActive(data.isSuperLegendary);
             }
         }
         else
@@ -124,10 +124,12 @@ public class ZukanManager : MonoBehaviour
             iconImage.color = Color.black; 
             descriptionText.text = "まだ発見していません。";
 
-            // 未開放の時は光らせない
-            if (specialEffect != null)
+            if (specialEffect != null) specialEffect.SetActive(false);
+            
+            // ★変更：未開放時はオーバーレイを隠す
+            if (overlayIconImage != null)
             {
-                specialEffect.SetActive(false);
+                overlayIconImage.gameObject.SetActive(false);
             }
         }
     }
