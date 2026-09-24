@@ -6479,12 +6479,12 @@ MonoBehaviour:
   hpImage: {fileID: 626954097}
   pauseUI: {fileID: 828095153}
   zukanPanel: {fileID: 1751575448}
-  titleSceneName: suika
+  titleSceneName: suika_test
   resumeButton: {fileID: 681456501}
   zukanButton: {fileID: 549467598}
   titleButton: {fileID: 556063137}
   arrow: {fileID: 590387810}
-  fadeMask: {fileID: 0}
+  fadeMask: {fileID: 1581391003}
   fadeDuration: 1
   transitionDelay: 2
   bgmSource: {fileID: 1648027174}
@@ -6911,6 +6911,92 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1 &1581391000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1581391001}
+  - component: {fileID: 1581391004}
+  - component: {fileID: 1581391003}
+  - component: {fileID: 1581391002}
+  m_Layer: 5
+  m_Name: RawImage (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &1581391001
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1581391000}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1642457651}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1581391002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1581391000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ac2f211366d0a546a38a73967dccc52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScrollingBackground
+  scrollSpeed: {x: -0.3, y: -0.3}
+--- !u!114 &1581391003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1581391000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Texture: {fileID: 2800000, guid: 92fd5306bc0d7134791c834f21b9ae2d, type: 3}
+  m_UVRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 9.6
+    height: 5.4
+--- !u!222 &1581391004
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1581391000}
+  m_CullTransparentMesh: 1
 --- !u!1 &1620544737
 GameObject:
   m_ObjectHideFlags: 0
@@ -7087,6 +7173,7 @@ RectTransform:
   - {fileID: 828095154}
   - {fileID: 1751575449}
   - {fileID: 147513098}
+  - {fileID: 1581391001}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -12264,7 +12351,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u30DD\u30FC\u30BA\u753B\u9762\u3078\u3082\u3069\u308B"
+  m_text: "B\u30DC\u30BF\u30F3/+-\u30DC\u30BF\u30F3\nEsc\u30AD\u30FC\u3067\u3082\u3069\u308B"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: bec590f2abd8dfb459cfb9b0185db4af, type: 2}
   m_sharedMaterial: {fileID: -3458001313199664017, guid: bec590f2abd8dfb459cfb9b0185db4af, type: 2}
@@ -12291,8 +12378,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 60
-  m_fontSizeBase: 60
+  m_fontSize: 50
+  m_fontSizeBase: 50
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -13221,10 +13308,10 @@ SceneRoots:
   - {fileID: 1485985040}
   - {fileID: 706692521}
   - {fileID: 1642457651}
-  - {fileID: 446728555}
   - {fileID: 2135855386}
   - {fileID: 1083208206}
   - {fileID: 1123552156}
   - {fileID: 150160813}
   - {fileID: 997686530}
   - {fileID: 720935742}
+  - {fileID: 446728555}
