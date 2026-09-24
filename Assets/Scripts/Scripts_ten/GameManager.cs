@@ -118,6 +118,7 @@ public class GameManager : MonoBehaviour
         SetupButton(zukanButton, OpenZukan);
         SetupButton(titleButton, GoToTitle);
         
+        // ゲームオーバー用ボタンのセットアップ
         SetupButton(retryButton, RestartGame);
         SetupButton(gameOverTitleButton, GoToTitle);
     }
@@ -178,12 +179,11 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        // ゲームオーバー後の入力処理
         if (!isGameActive)
         {
             if (gameOverUI != null && gameOverUI.activeSelf)
             {
-                // UI切り替え直後のフレームは入力を無視
-                if (Time.frameCount <= ignoreInputFrame + 1) return;
                 HandleGameOverInput();
             }
             return;
@@ -212,14 +212,10 @@ public class GameManager : MonoBehaviour
         {
             Time.timeScale = 0f; 
 
-            // メニューの開閉を行った直後のフレームは入力を無視する（誤操作による即閉じ防止）
-            if (Time.frameCount <= ignoreInputFrame + 1) return;
-
             if (isZukanOpen)
             {
                 bool cancelZukan = false;
-                // プロコンのキャンセル＝Bボタン (South)
-                if (Gamepad.current != null) cancelZukan |= Gamepad.current.buttonSouth.wasPressedThisFrame;
+                if (Gamepad.current != null) cancelZukan |= Gamepad.current.buttonSouth.wasPressedThisFrame || Gamepad.current.buttonEast.wasPressedThisFrame;
                 if (Keyboard.current != null) cancelZukan |= Keyboard.current.backspaceKey.wasPressedThisFrame; 
                 
                 if (cancelZukan) CloseZukan();
@@ -227,8 +223,7 @@ public class GameManager : MonoBehaviour
             else
             {
                 bool cancelPause = false;
-                // プロコンのキャンセル＝Bボタン (South)
-                if (Gamepad.current != null) cancelPause |= Gamepad.current.buttonSouth.wasPressedThisFrame;
+                if (Gamepad.current != null) cancelPause |= Gamepad.current.buttonSouth.wasPressedThisFrame || Gamepad.current.buttonEast.wasPressedThisFrame;
                 if (Keyboard.current != null) cancelPause |= Keyboard.current.backspaceKey.wasPressedThisFrame;
 
                 if (cancelPause)
@@ -328,8 +323,7 @@ public class GameManager : MonoBehaviour
             wasStickNext = isStickNext;
             wasStickPrev = isStickPrev;
 
-            // プロコンの決定＝Aボタン (East)
-            submit |= Gamepad.current.buttonEast.wasPressedThisFrame;
+            submit |= Gamepad.current.buttonEast.wasPressedThisFrame || Gamepad.current.buttonSouth.wasPressedThisFrame;
         }
 
         if (moveNext)
@@ -420,6 +414,71 @@ public class GameManager : MonoBehaviour
             if (currentGameOverButton == retryButton) RestartGame();
             else if (currentGameOverButton == gameOverTitleButton) GoToTitle();
             return;
+        }
+    }
+
+    private void HandleGameOverInput()
+    {
+        GameObject selectedObj = EventSystem.current.currentSelectedGameObject;
+        if (selectedObj != null && selectedObj != currentGameOverButton)
+        {
+            if (selectedObj == retryButton || selectedObj == gameOverTitleButton)
+            {
+                currentGameOverButton = selectedObj;
+                UpdateArrowPosition(currentGameOverButton);
+            }
+        }
+        else if (selectedObj == null && currentGameOverButton != null)
+        {
+            EventSystem.current.SetSelectedGameObject(currentGameOverButton);
+        }
+
+        bool moveNext = false; 
+        bool movePrev = false; 
+        bool submit = false;   
+
+        if (Keyboard.current != null)
+        {
+            moveNext |= Keyboard.current.dKey.wasPressedThisFrame || Keyboard.current.rightArrowKey.wasPressedThisFrame || Keyboard.current.sKey.wasPressedThisFrame || Keyboard.current.downArrowKey.wasPressedThisFrame;
+            movePrev |= Keyboard.current.aKey.wasPressedThisFrame || Keyboard.current.leftArrowKey.wasPressedThisFrame || Keyboard.current.wKey.wasPressedThisFrame || Keyboard.current.upArrowKey.wasPressedThisFrame;
+            submit |= Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame;
+        }
+
+        if (Gamepad.current != null)
+        {
+            moveNext |= Gamepad.current.dpad.right.wasPressedThisFrame || Gamepad.current.dpad.down.wasPressedThisFrame;
+            movePrev |= Gamepad.current.dpad.left.wasPressedThisFrame || Gamepad.current.dpad.up.wasPressedThisFrame;
+
+            Vector2 stick = Gamepad.current.leftStick.ReadValue();
+            bool isStickNext = stick.x > 0.5f || stick.y < -0.5f;
+            bool isStickPrev = stick.x < -0.5f || stick.y > 0.5f;
+
+            if (isStickNext && !wasStickNext) moveNext = true;
+            if (isStickPrev && !wasStickPrev) movePrev = true;
+
+            wasStickNext = isStickNext;
+            wasStickPrev = isStickPrev;
+
+            submit |= Gamepad.current.buttonEast.wasPressedThisFrame || Gamepad.current.buttonSouth.wasPressedThisFrame;
+        }
+
+        // リトライとタイトルへ の2択なので、前後どちらの入力でも反転させる
+        if (moveNext || movePrev)
+        {
+            if (currentGameOverButton == retryButton) currentGameOverButton = gameOverTitleButton;
+            else currentGameOverButton = retryButton;
+
+            PlaySelectSound();
+            SelectGameOverButton();
+        }
+
+        if (submit && currentGameOverButton != null)
+        {
+            Button btn = currentGameOverButton.GetComponent<Button>();
+            if (btn != null)
+            {
+                btn.onClick.Invoke();
+            }
         }
     }
 
@@ -719,9 +778,8 @@ public class GameManager : MonoBehaviour
                 yield return null;
             }
             cg.alpha = 1f; 
-            
-            ignoreInputFrame = Time.frameCount;
 
+            // フェード完了後、初期ボタンを選択状態にする
             currentGameOverButton = retryButton;
             SelectGameOverButton();
         }
@@ -739,6 +797,7 @@ public class GameManager : MonoBehaviour
     {
         if (isTransitioning) return;
         PlayDecideSound();
+        // 現在のシーン名を取得して、フェード付きで再読み込み
         StartCoroutine(FadeAndLoadScene(SceneManager.GetActiveScene().name));
     }
 }
