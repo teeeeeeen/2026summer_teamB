@@ -1,137 +1,449 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using System.Collections;
 
-public class MenuNavigator : MonoBehaviour
+[RequireComponent(typeof(AudioSource))]
+public class MainMenunavigator : MonoBehaviour
 {
+    [Header("パネル設定")]
+    public GameObject mainMenuPanel;
+    public GameObject howToPlayPanel;
+
     [Header("ボタン設定")]
     public GameObject startButton;
     public GameObject howToButton;
+    public GameObject zukanButton;
     public GameObject quitButton;
     public GameObject arrow;
+
+    [Header("シーン遷移・フェード設定")]
+    public RawImage fadeMask;
+
+    [Tooltip("フェードにかかる時間")]
+    public float fadeDuration = 1.0f;
+
+    [Tooltip("フェード完了からシーン遷移までの待機時間（秒）")]
+    public float transitionDelay = 1.0f;
+
+    [Tooltip("スタート時に遷移するシーン名")]
+    public string nextSceneName = "Main";
 
     [Header("サウンド設定")]
     public AudioClip selectSound;
     public AudioClip decideSound;
 
-    [Header("フェード設定")]
-    [Tooltip("フェード用のマスク (RawImage)")]
-    public RawImage fadeMask;
-    [Tooltip("フェードインにかかる時間")]
-    public float fadeDuration = 1.0f;
-
     private AudioSource audioSource;
-    private GameObject currentButton;
 
-    // アナログスティックの連続入力を防ぐための状態保持
-    private bool wasStickRight = false;
-    private bool wasStickLeft = false;
+    private GameObject currentButton;
+    private bool isTransitioning = false;
+
+    // スティックの入力状態保持
+    private bool wasStickNext = false;
+    private bool wasStickPrev = false;
+
+    // パネル開閉のクールタイム用
+    private float howToOpenTime = 0f;
+
 
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
 
-        // マウスクリック時にも決定音が鳴るように、各ボタンのイベントに直接音を紐づける
-        RegisterClickSound(startButton);
-        RegisterClickSound(howToButton);
-        RegisterClickSound(quitButton);
+        // ボタン登録
+        SetupButton(startButton, OnStartClicked);
+        SetupButton(howToButton, OnHowToClicked);
+        SetupButton(zukanButton, OnZukanClicked);
+        SetupButton(quitButton, OnQuitClicked);
 
+        // パネル初期設定
+        if (howToPlayPanel != null)
+            howToPlayPanel.SetActive(false);
+
+        if (mainMenuPanel != null)
+            mainMenuPanel.SetActive(true);
+
+        // 最初に選択するボタン
         currentButton = startButton;
         SelectButton();
 
-        // RawImageが設定されていればフェードイン（不透明→透明）を開始
+        // フェードイン
         if (fadeMask != null)
         {
             StartCoroutine(FadeInCoroutine());
         }
     }
 
+
+    private void SetupButton(GameObject btnObj, UnityEngine.Events.UnityAction action)
+    {
+        if (btnObj != null)
+        {
+            Button btn = btnObj.GetComponent<Button>();
+
+            if (btn != null)
+            {
+                btn.onClick.AddListener(action);
+            }
+        }
+    }
+
+
     void Update()
     {
-        bool moveRight = false;
-        bool moveLeft = false;
-        bool submit = false;
+        if (isTransitioning)
+            return;
 
-        // キーボード入力
-        if (Keyboard.current != null)
+
+        // ========================================
+        // 遊び方パネルが開いている時
+        // ========================================
+
+        if (howToPlayPanel != null && howToPlayPanel.activeSelf)
         {
-            moveRight |= Keyboard.current.dKey.wasPressedThisFrame || Keyboard.current.rightArrowKey.wasPressedThisFrame;
-            moveLeft |= Keyboard.current.aKey.wasPressedThisFrame || Keyboard.current.leftArrowKey.wasPressedThisFrame;
-            submit |= Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.zKey.wasPressedThisFrame;
+            // 開いた直後に決定ボタンで閉じないようにする
+            if (Time.unscaledTime - howToOpenTime > 0.2f)
+            {
+                bool cancel = false;
+
+                // コントローラー
+                if (Gamepad.current != null)
+                {
+                    cancel |= Gamepad.current.buttonEast.wasPressedThisFrame;
+                    cancel |= Gamepad.current.buttonSouth.wasPressedThisFrame;
+                }
+
+                // キーボード
+                if (Keyboard.current != null)
+                {
+                    cancel |= Keyboard.current.escapeKey.wasPressedThisFrame;
+                    cancel |= Keyboard.current.backspaceKey.wasPressedThisFrame;
+                    cancel |= Keyboard.current.enterKey.wasPressedThisFrame;
+                    cancel |= Keyboard.current.spaceKey.wasPressedThisFrame;
+                    cancel |= Keyboard.current.zKey.wasPressedThisFrame;
+                }
+
+                if (cancel)
+                {
+                    CloseHowTo();
+                }
+            }
+
+            return;
         }
 
-        // コントローラー（ゲームパッド）入力
+
+        // ========================================
+        // 入力
+        // ========================================
+
+        bool moveNext = false; // 右・下
+        bool movePrev = false; // 左・上
+        bool submit = false;
+
+
+        // ========================================
+        // キーボード入力
+        // ========================================
+
+        if (Keyboard.current != null)
+        {
+            // 次へ
+            moveNext |=
+                Keyboard.current.dKey.wasPressedThisFrame ||
+                Keyboard.current.rightArrowKey.wasPressedThisFrame ||
+                Keyboard.current.sKey.wasPressedThisFrame ||
+                Keyboard.current.downArrowKey.wasPressedThisFrame;
+
+            // 前へ
+            movePrev |=
+                Keyboard.current.aKey.wasPressedThisFrame ||
+                Keyboard.current.leftArrowKey.wasPressedThisFrame ||
+                Keyboard.current.wKey.wasPressedThisFrame ||
+                Keyboard.current.upArrowKey.wasPressedThisFrame;
+
+            // 決定
+            submit |=
+                Keyboard.current.enterKey.wasPressedThisFrame ||
+                Keyboard.current.spaceKey.wasPressedThisFrame ||
+                Keyboard.current.zKey.wasPressedThisFrame;
+        }
+
+
+        // ========================================
+        // コントローラー入力
+        // ========================================
+
         if (Gamepad.current != null)
         {
             // 十字キー
-            moveRight |= Gamepad.current.dpad.right.wasPressedThisFrame;
-            moveLeft |= Gamepad.current.dpad.left.wasPressedThisFrame;
+            moveNext |=
+                Gamepad.current.dpad.right.wasPressedThisFrame ||
+                Gamepad.current.dpad.down.wasPressedThisFrame;
 
-            // スティック (0.5以上倒した瞬間のみ判定する処理)
-            float stickX = Gamepad.current.leftStick.x.ReadValue();
-            bool isStickRight = stickX > 0.5f;
-            bool isStickLeft = stickX < -0.5f;
+            movePrev |=
+                Gamepad.current.dpad.left.wasPressedThisFrame ||
+                Gamepad.current.dpad.up.wasPressedThisFrame;
 
-            if (isStickRight && !wasStickRight) moveRight = true;
-            if (isStickLeft && !wasStickLeft) moveLeft = true;
 
-            wasStickRight = isStickRight;
-            wasStickLeft = isStickLeft;
+            // 左スティック
+            Vector2 stick = Gamepad.current.leftStick.ReadValue();
 
-            // Aボタン(South) または Bボタン(East) で決定
-            submit |= Gamepad.current.buttonSouth.wasPressedThisFrame || Gamepad.current.buttonEast.wasPressedThisFrame;
+            bool isStickNext =
+                stick.x > 0.5f ||
+                stick.y < -0.5f;
+
+            bool isStickPrev =
+                stick.x < -0.5f ||
+                stick.y > 0.5f;
+
+
+            // スティックを倒した瞬間だけ反応
+            if (isStickNext && !wasStickNext)
+                moveNext = true;
+
+            if (isStickPrev && !wasStickPrev)
+                movePrev = true;
+
+
+            wasStickNext = isStickNext;
+            wasStickPrev = isStickPrev;
+
+
+            // 決定
+            submit |=
+                Gamepad.current.buttonSouth.wasPressedThisFrame ||
+                Gamepad.current.buttonEast.wasPressedThisFrame;
         }
 
-        // 右移動処理
-        if (moveRight)
+
+        // ========================================
+        // 次のボタンへ
+        // ========================================
+
+        if (moveNext)
         {
-            if (currentButton == startButton) currentButton = howToButton;
-            else if (currentButton == howToButton) currentButton = quitButton;
-            else currentButton = startButton;
+            if (currentButton == startButton)
+            {
+                currentButton = howToButton;
+            }
+            else if (currentButton == howToButton)
+            {
+                currentButton = zukanButton;
+            }
+            else if (currentButton == zukanButton)
+            {
+                currentButton = quitButton;
+            }
+            else
+            {
+                currentButton = startButton;
+            }
 
             PlaySelectSound();
             SelectButton();
         }
 
-        // 左移動処理
-        if (moveLeft)
+
+        // ========================================
+        // 前のボタンへ
+        // ========================================
+
+        else if (movePrev)
         {
-            if (currentButton == startButton) currentButton = quitButton;
-            else if (currentButton == howToButton) currentButton = startButton;
-            else currentButton = howToButton;
+            if (currentButton == startButton)
+            {
+                currentButton = quitButton;
+            }
+            else if (currentButton == howToButton)
+            {
+                currentButton = startButton;
+            }
+            else if (currentButton == zukanButton)
+            {
+                currentButton = howToButton;
+            }
+            else
+            {
+                currentButton = zukanButton;
+            }
 
             PlaySelectSound();
             SelectButton();
         }
 
-        // 決定処理
+
+        // ========================================
+        // 決定
+        // ========================================
+
         if (submit)
         {
-            Button button = currentButton.GetComponent<Button>();
-            if (button != null)
+            if (currentButton != null)
             {
-                // UIボタンのクリック処理を実行 (RegisterClickSoundで設定した音もここで鳴る)
-                button.onClick.Invoke();
+                Button btn = currentButton.GetComponent<Button>();
+
+                if (btn != null)
+                {
+                    btn.onClick.Invoke();
+                }
             }
         }
     }
 
-    // マウスクリック時に決定音を鳴らすためのリスナー登録
-    private void RegisterClickSound(GameObject buttonObj)
+
+    // ========================================
+    // スタート
+    // ========================================
+
+    public void OnStartClicked()
     {
-        if (buttonObj != null)
+        if (isTransitioning)
+            return;
+
+        PlayDecideSound();
+
+        StartCoroutine(FadeOutAndLoadScene(nextSceneName));
+    }
+
+
+    // ========================================
+    // 遊び方
+    // ========================================
+
+    public void OnHowToClicked()
+    {
+        if (isTransitioning)
+            return;
+
+        PlayDecideSound();
+
+        if (howToPlayPanel != null)
+            howToPlayPanel.SetActive(true);
+
+        if (mainMenuPanel != null)
+            mainMenuPanel.SetActive(false);
+
+        howToOpenTime = Time.unscaledTime;
+    }
+
+
+    // ========================================
+    // 遊び方を閉じる
+    // ========================================
+
+    public void CloseHowTo()
+    {
+        PlayDecideSound();
+
+        if (howToPlayPanel != null)
+            howToPlayPanel.SetActive(false);
+
+        if (mainMenuPanel != null)
+            mainMenuPanel.SetActive(true);
+    }
+
+
+    // ========================================
+    // 図鑑
+    // ========================================
+
+    public void OnZukanClicked()
+    {
+        if (isTransitioning)
+            return;
+
+        PlayDecideSound();
+
+        // 図鑑シーン「ishii4」へ移動
+        StartCoroutine(FadeOutAndLoadScene("ishii4"));
+    }
+
+
+    // ========================================
+    // 終了
+    // ========================================
+
+    public void OnQuitClicked()
+    {
+        if (isTransitioning)
+            return;
+
+        PlayDecideSound();
+
+        isTransitioning = true;
+
+        Debug.Log("ゲーム終了");
+
+        Application.Quit();
+    }
+
+
+    // ========================================
+    // ボタン選択
+    // ========================================
+
+    private void SelectButton()
+    {
+        if (startButton != null)
+            startButton.GetComponentInChildren<ScrollingBack>()?.SetSelected(false);
+
+        if (howToButton != null)
+            howToButton.GetComponentInChildren<ScrollingBack>()?.SetSelected(false);
+
+        if (zukanButton != null)
+            zukanButton.GetComponentInChildren<ScrollingBack>()?.SetSelected(false);
+
+        if (quitButton != null)
+            quitButton.GetComponentInChildren<ScrollingBack>()?.SetSelected(false);
+
+
+        // 現在選択しているボタン
+        if (currentButton != null)
         {
-            Button btn = buttonObj.GetComponent<Button>();
-            if (btn != null)
+            currentButton.GetComponentInChildren<ScrollingBack>()?.SetSelected(true);
+        }
+
+
+        // EventSystem
+        if (EventSystem.current != null && currentButton != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+            EventSystem.current.SetSelectedGameObject(currentButton);
+        }
+
+
+        // ========================================
+        // 矢印
+        // ========================================
+
+        if (arrow != null && currentButton != null)
+        {
+            arrow.transform.SetParent(currentButton.transform, false);
+
+            RectTransform arrowRect = arrow.GetComponent<RectTransform>();
+
+            if (arrowRect != null)
             {
-                btn.onClick.AddListener(PlayDecideSound);
+                arrowRect.anchorMin = new Vector2(0.5f, 1f);
+                arrowRect.anchorMax = new Vector2(0.5f, 1f);
+                arrowRect.pivot = new Vector2(0.5f, 0f);
+
+                arrowRect.anchoredPosition = new Vector2(15f, -35f);
             }
+
+            arrow.SetActive(true);
         }
     }
 
-    void PlaySelectSound()
+
+    // ========================================
+    // 選択音
+    // ========================================
+
+    private void PlaySelectSound()
     {
         if (selectSound != null && audioSource != null)
         {
@@ -139,7 +451,12 @@ public class MenuNavigator : MonoBehaviour
         }
     }
 
-    void PlayDecideSound()
+
+    // ========================================
+    // 決定音
+    // ========================================
+
+    private void PlayDecideSound()
     {
         if (decideSound != null && audioSource != null)
         {
@@ -147,55 +464,96 @@ public class MenuNavigator : MonoBehaviour
         }
     }
 
-    void SelectButton()
-    {
-        // 全ボタンの背景を停止
-        startButton.GetComponentInChildren<ScrollingBack>()?.SetSelected(false);
-        howToButton.GetComponentInChildren<ScrollingBack>()?.SetSelected(false);
-        quitButton.GetComponentInChildren<ScrollingBack>()?.SetSelected(false);
 
-        // 選択中の背景だけ動かす
-        currentButton.GetComponentInChildren<ScrollingBack>()?.SetSelected(true);
+    // ========================================
+    // フェードイン
+    // ========================================
 
-        // EventSystemの選択を更新
-        EventSystem.current.SetSelectedGameObject(null);
-        EventSystem.current.SetSelectedGameObject(currentButton);
-
-        // 矢印を選択中のボタンの子にする
-        if (arrow != null)
-        {
-            arrow.transform.SetParent(currentButton.transform, false);
-            RectTransform arrowRect = arrow.GetComponent<RectTransform>();
-
-            arrowRect.anchorMin = new Vector2(0.5f, 1f);
-            arrowRect.anchorMax = new Vector2(0.5f, 1f);
-            arrowRect.pivot = new Vector2(0.5f, 0f);
-
-            // 矢印の位置
-            arrowRect.anchoredPosition = new Vector2(15f, -35f);
-            arrow.SetActive(true);
-        }
-    }
-
-    // RawImageを使用したフェードイン処理
     private IEnumerator FadeInCoroutine()
     {
+        isTransitioning = true;
+
         fadeMask.gameObject.SetActive(true);
+
         Color color = fadeMask.color;
+
         color.a = 1f;
         fadeMask.color = color;
 
+
         float time = 0f;
+
         while (time < fadeDuration)
         {
             time += Time.deltaTime;
-            color.a = Mathf.Lerp(1f, 0f, time / fadeDuration);
+
+            color.a = Mathf.Lerp(
+                1f,
+                0f,
+                time / fadeDuration
+            );
+
             fadeMask.color = color;
+
             yield return null;
         }
 
+
         color.a = 0f;
         fadeMask.color = color;
+
         fadeMask.gameObject.SetActive(false);
+
+        isTransitioning = false;
+    }
+
+
+    // ========================================
+    // フェードアウトしてシーン移動
+    // ========================================
+
+    private IEnumerator FadeOutAndLoadScene(string sceneName)
+    {
+        isTransitioning = true;
+
+        if (fadeMask != null)
+        {
+            fadeMask.gameObject.SetActive(true);
+
+            Color color = fadeMask.color;
+
+            color.a = 0f;
+            fadeMask.color = color;
+
+
+            float time = 0f;
+
+            while (time < fadeDuration)
+            {
+                time += Time.deltaTime;
+
+                color.a = Mathf.Lerp(
+                    0f,
+                    1f,
+                    time / fadeDuration
+                );
+
+                fadeMask.color = color;
+
+                yield return null;
+            }
+
+
+            color.a = 1f;
+            fadeMask.color = color;
+        }
+
+
+        // フェード完了後に待機
+        yield return new WaitForSeconds(transitionDelay);
+
+
+        // シーン移動
+        SceneManager.LoadScene(sceneName);
     }
 }
