@@ -12,9 +12,11 @@ public class Flet : MonoBehaviour
     
     void Update()
     {
-  
+        // GameManagerから現在の倍率を取得して速度に乗算する
+        float currentMultiplier = GameManager.instance != null ? GameManager.instance.currentSpeedMultiplier : 1f;
+
         // 通常の移動：Space.Worldを指定してワールド空間のZ軸マイナス方向へ進ませる
-        transform.Translate(Vector3.back * speed * Time.deltaTime, Space.World);
+        transform.Translate(Vector3.back * speed * currentMultiplier * Time.deltaTime, Space.World);
 
         // 画面手前を通り過ぎた時の処理
         if (transform.position.z < destroyZ)

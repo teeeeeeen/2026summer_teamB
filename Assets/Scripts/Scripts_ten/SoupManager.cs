@@ -263,7 +263,7 @@ public class SoupManager : MonoBehaviour
             case 1: return "湯豆腐";
             case 2: return "わかめスープ";
             case 3: return "きつねみそしる";
-            case 4: return "超トロトロ なすみそしる";
+            case 4: return "超トロトロなすみそしる";
             case 5: return "なめこの餡かけみそしる";
             case 6: return "芋煮";
             case 7: return "ねぎだく薬味みそしる";
@@ -394,7 +394,7 @@ public class SoupManager : MonoBehaviour
 
         if (resultCurrentScoreText != null)
         {
-            resultCurrentScoreText.text = $"今回のスコア: {totalScore}";
+            resultCurrentScoreText.text = $"{totalScore}";
         }
     }
 

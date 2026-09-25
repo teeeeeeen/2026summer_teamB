@@ -6,7 +6,7 @@ public class ScrollingBackground : MonoBehaviour
 {
     [Header("スクロール速度")]
     [Tooltip("斜めに動かす場合はXとYの両方に値を入れてください（例：X=0.1, Y=0.1）")]
-    public Vector2 scrollSpeed = new Vector2(0.1f, 0.1f);
+    private Vector2 scrollSpeed = new Vector2(-0.3f, -0.3f);
 
     private RawImage rawImage;
     private Rect uvRect;
